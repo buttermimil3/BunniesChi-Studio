@@ -12,8 +12,8 @@
   // ============================================================
   // PART 1: Supabase Configuration
   // ============================================================
-  const SUPABASE_URL = 'https://mqzfpawneqcqdyzqopgh.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xemZwYXduZXFjcWR5enFvcGdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NDc5MjYsImV4cCI6MjEwMzEyMzkyNn0.kyoqunHtuJtt3OWJJrwjwuvj5ZuvbciyhPyWMIdjGtk';
+  const SUPABASE_URL = 'https://zxoahkhgnefgdsyaiyvx.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4b2Foa2hnbmVmZ2RzeWFpeXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MDE3MzAsImV4cCI6MjEwMzA3NzczMH0.XozerRxX0YYCQg9oG49BmQN6JIiCDas8k1lGMtzJsOo';
   
   let supabase = null;
   function initSupabase() {
@@ -32,7 +32,15 @@
   // ============================================================
   // Supabase Storage & Optimized Image Upload Helper
   // ============================================================
-  const DEFAULT_PRODUCT_IMG = 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&auto=format&fit=crop&q=80';
+  const DEFAULT_PRODUCT_IMG = '';
+  const PLACEHOLDER_IMG_SVG = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.65;"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
+
+  function renderMediaHtml(imgUrl, altText = 'Media', customStyle = '') {
+    if (imgUrl && String(imgUrl).trim().length > 0) {
+      return `<img src="${escapeHTML(imgUrl)}" alt="${escapeHTML(altText)}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='grid';" /><div style="display:none; width:100%; height:100%; place-items:center; background:var(--primary-50); color:var(--accent-text); border-radius:inherit; ${customStyle}">${PLACEHOLDER_IMG_SVG}</div>`;
+    }
+    return `<div style="display:grid; width:100%; height:100%; place-items:center; background:var(--primary-50); color:var(--accent-text); border-radius:inherit; ${customStyle}">${PLACEHOLDER_IMG_SVG}</div>`;
+  }
 
   async function uploadProductImage(file) {
     if (!file || !file.type || !file.type.startsWith('image/')) {
@@ -160,8 +168,6 @@
     { key: 'dashboard', label: 'Dashboard', icon: ICONS.dashboard },
     { key: 'orders', label: 'Orders', icon: ICONS.orders },
     { key: 'products', label: 'Products', icon: ICONS.products },
-    { key: 'categories', label: 'Categories', icon: ICONS.categories },
-    { key: 'pricing', label: 'Setting Price', icon: ICONS.promotions },
     { key: 'stock', label: 'Stock', icon: ICONS.stock },
     { key: 'customers', label: 'Customers', icon: ICONS.customers },
     { key: 'reviews', label: 'Reviews', icon: ICONS.reviews },
@@ -228,17 +234,22 @@
 
   function persistPromotions() { /* no-op: Supabase is the single source of truth */ }
 
-  let BANNERS = [
+  const DEFAULT_BANNERS = [
     { id: 1, title: '', sub: '', tag: '', image: '' },
     { id: 2, title: '', sub: '', tag: '', image: '' },
-    { id: 3, title: '', sub: '', tag: '', image: '' },
-    { id: 4, title: '', sub: '', tag: '', image: '' },
-    { id: 5, title: '', sub: '', tag: '', image: '' }
+    { id: 3, title: '', sub: '', tag: '', image: '' }
   ];
+
+  let BANNERS = JSON.parse(JSON.stringify(DEFAULT_BANNERS));
 
   try {
     const savedB = localStorage.getItem('haypos_banners');
-    if (savedB) BANNERS = JSON.parse(savedB);
+    if (savedB) {
+      const parsed = JSON.parse(savedB);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        BANNERS = parsed;
+      }
+    }
   } catch (e) {}
 
   function persistBanners() {
@@ -248,10 +259,85 @@
   let STOCK = [];
 
   // ============================================================
+  // SOCIAL & CONTACT PLATFORMS DIRECTORY
+  // ============================================================
+  const SOCIAL_PLATFORMS = {
+    line: {
+      name: 'Line OA',
+      color: '#06C755',
+      bg: '#06C75515',
+      border: '#06C75540',
+      icon: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.019 9.572.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975 1.766-1.924 2.564-3.882 2.564-5.932"/></svg>`
+    },
+    facebook: {
+      name: 'Facebook',
+      color: '#1877F2',
+      bg: '#1877F215',
+      border: '#1877F240',
+      icon: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`
+    },
+    instagram: {
+      name: 'Instagram',
+      color: '#E1306C',
+      bg: '#E1306C15',
+      border: '#E1306C40',
+      icon: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>`
+    },
+    tiktok: {
+      name: 'TikTok',
+      color: '#000000',
+      bg: '#00000010',
+      border: '#00000030',
+      icon: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.47 6.27 6.27 0 0 0 1.95-4.47V8.5a8.28 8.28 0 0 0 4.82 1.55v-3.36z"/></svg>`
+    },
+    twitter: {
+      name: 'Twitter / X',
+      color: '#0F1419',
+      bg: '#0F141910',
+      border: '#0F141930',
+      icon: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`
+    },
+    discord: {
+      name: 'Discord',
+      color: '#5865F2',
+      bg: '#5865F215',
+      border: '#5865F240',
+      icon: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>`
+    },
+    telegram: {
+      name: 'Telegram',
+      color: '#229ED9',
+      bg: '#229ED915',
+      border: '#229ED940',
+      icon: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`
+    },
+    youtube: {
+      name: 'YouTube',
+      color: '#FF0000',
+      bg: '#FF000015',
+      border: '#FF000040',
+      icon: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`
+    },
+    custom: {
+      name: 'Website / อื่นๆ',
+      color: 'var(--accent-text)',
+      bg: 'var(--primary-50)',
+      border: 'var(--border)',
+      icon: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></svg>`
+    }
+  };
+
+  // ============================================================
   // PART 3: Application State (Visitor Mode by Default)
   // ============================================================
   const DEFAULT_STORE_CONFIG = {
     name: 'BNC HayMate',
+    homeContactTitle: 'ติดต่อสอบถาม & แจ้งรหัสออเดอร์',
+    homeContactSub: 'ตอบกลับไว ให้บริการทุกวัน 08:00 - 22:00 น.',
+    homeContacts: [
+      { id: 'c_line', platform: 'line', label: 'Line OA', url: '' },
+      { id: 'c_fb', platform: 'facebook', label: 'Facebook', url: '' }
+    ],
     brandLogoType: 'emoji', // 'emoji' | 'image'
     brandLogoText: 'B',
     brandLogoImage: '',
@@ -288,65 +374,6 @@
     trackingReviewTitle: 'BNC HayMate',
     trackingReviewSub: '',
     trackingReviewBtnText: 'เขียนรีวิว & ให้คะแนนร้าน',
-    trackingContactLabel: '💬 ทักแชทแจ้งออเดอร์ (Line OA)',
-    trackingContactUrl: 'https://line.me/R/ti/p/@bnchaymate',
-    // Marquee Announcement Ticker Settings
-    announcementIcon: '📢',
-    announcementImage: '',
-    announcementText: 'ยินดีต้อนรับสู่ BNC HayMate ไอเทมเฮย์เดย์ครบวงจร ส่งไว ตอบแชท 24 ชม.',
-    announcementEnabled: true,
-    // Dynamic Pricing Rule Boxes (Category + Level Range + Tiers)
-    priceRules: [
-      {
-        id: 1,
-        category: 'อาหารสัตว์',
-        levelDisplay: '1 - 75',
-        minLevel: 1,
-        maxLevel: 75,
-        tiers: [
-          { qty: 10, price: 2 },
-          { qty: 50, price: 8 },
-          { qty: 100, price: 15 }
-        ]
-      },
-      {
-        id: 2,
-        category: 'อาหารสัตว์',
-        levelDisplay: '76 - 256',
-        minLevel: 76,
-        maxLevel: 256,
-        tiers: [
-          { qty: 10, price: 3 },
-          { qty: 50, price: 10 },
-          { qty: 100, price: 18 }
-        ]
-      },
-      {
-        id: 3,
-        category: 'ขนม',
-        levelDisplay: 'All Level',
-        minLevel: 1,
-        maxLevel: 9999,
-        tiers: [
-          { qty: 10, price: 2 },
-          { qty: 50, price: 8 },
-          { qty: 100, price: 10 }
-        ]
-      }
-    ],
-    // Category Quantity & Tiered Pricing Settings (Legacy fallback)
-    categoryPricing: {},
-    // Level Categories & Ranges
-    levelRanges: ['Lv. 1 - 20', 'Lv. 21 - 40', 'Lv. 41 - 60', 'Lv. 61 - 80', 'Lv. 81 - 100+'],
-    // Mascot & Contact Channels (Home Page)
-    homeMascotImage: '',
-    homeMascotEmoji: '🌸',
-    homeContactTopText: 'ติดต่อสอบถาม & แจ้งรหัสออเดอร์',
-    homeContactBottomText: 'ตอบกลับไว ให้บริการทุกวัน 08:00 - 22:00 น.',
-    contactChannels: [
-      { id: 1, name: 'Line OA', link: 'https://line.me/R/ti/p/@bnchaymate', image: '', icon: '💬' },
-      { id: 2, name: 'Facebook', link: 'https://facebook.com', image: '', icon: '📘' }
-    ],
     // Heart Rating Labels (Customizable in Settings)
     starLabel1: '1 ดวงใจ - ต้องปรับปรุง',
     starLabel2: '2 ดวงใจ - พอใช้ได้',
@@ -378,7 +405,97 @@
     stickyNoteBorder: '#EFE6C7',
     stickyNoteBottomBorder: '#DFD2A8',
     stickyNotePinColor: '#EFA6C1',
-    stickyNoteTextColor: '#3E3426',
+    // Multi-Product Module Toggles & Services
+    enableItems: true,
+    enableCoinFarm: true,
+    enableGameIds: true,
+    itemClickStep: 1, // Default items added per click (1, 10, 80)
+    priceRatio: 1.0, // Item price ratio / multiplier (e.g. 1.0, 1.25)
+    coinFarmBoxes: [
+      {
+        id: 'cf_box_1',
+        title: 'Level 1 - 30',
+        sub: 'สำหรับฟาร์มเลเวลเริ่มต้น',
+        tiers: [
+          { id: 't1', coins: '10,000 เหรียญ', price: 25, desc: 'ใช้เวลาประมาณ 10-15 นาที' },
+          { id: 't2', coins: '50,000 เหรียญ', price: 35, desc: 'ใช้เวลาประมาณ 20-30 นาที' },
+          { id: 't3', coins: '100,000 เหรียญ', price: 45, desc: 'ใช้เวลาประมาณ 45-60 นาที' }
+        ]
+      },
+      {
+        id: 'cf_box_2',
+        title: 'Level 31 - 60',
+        sub: 'สำหรับฟาร์มเลเวลระดับกลาง',
+        tiers: [
+          { id: 't4', coins: '100,000 เหรียญ', price: 45, desc: 'ใช้เวลาประมาณ 30 นาที' },
+          { id: 't5', coins: '500,000 เหรียญ', price: 120, desc: 'ใช้เวลาประมาณ 1-2 ชั่วโมง' },
+          { id: 't6', coins: '1,000,000 เหรียญ', price: 200, desc: 'ใช้เวลาประมาณ 2-3 ชั่วโมง' }
+        ]
+      },
+      {
+        id: 'cf_box_3',
+        title: 'Level 61 - 100+',
+        sub: 'สำหรับฟาร์มเลเวลระดับสูง',
+        tiers: [
+          { id: 't7', coins: '500,000 เหรียญ', price: 100, desc: 'ฟาร์มไว ได้เหรียญเร็ว' },
+          { id: 't8', coins: '1,000,000 เหรียญ', price: 180, desc: 'แพ็กเกจยอดนิยม' },
+          { id: 't9', coins: '5,000,000 เหรียญ', price: 750, desc: 'คุ้มค่าที่สุดสำหรับฟาร์มใหญ่' }
+        ]
+      }
+    ],
+    gameAccounts: [
+      {
+        id: 'id_001',
+        code: 'ID-001',
+        title: 'ไอดี HayDay Lv.85 ยุ้งฉาง 3500+ เหรียญ 5 ล้าน',
+        price: 1290,
+        status: 'available',
+        images: [],
+        details: 'เลเวล 85 | ยุ้งฉาง 3,500 | ไซโล 3,200 | เหรียญ 5,400,000 | เพชร 450 | ปลดล็อกครบทุกโรงงาน สะอาดปลอดภัย 100%',
+        badge: ''
+      }
+    ],
+    priceRules: [
+      {
+        id: 'pr_1',
+        category: 'อาหารสัตว์',
+        levelMin: 1,
+        levelMax: 75,
+        isAllLevel: false,
+        step: 10,
+        tiers: [
+          { id: 'pt_1', qty: 10, price: 2.00 },
+          { id: 'pt_2', qty: 50, price: 8.00 },
+          { id: 'pt_3', qty: 100, price: 15.00 }
+        ]
+      },
+      {
+        id: 'pr_2',
+        category: 'อาหารสัตว์',
+        levelMin: 76,
+        levelMax: 256,
+        isAllLevel: false,
+        step: 10,
+        tiers: [
+          { id: 'pt_4', qty: 10, price: 3.00 },
+          { id: 'pt_5', qty: 50, price: 10.00 },
+          { id: 'pt_6', qty: 100, price: 18.00 }
+        ]
+      },
+      {
+        id: 'pr_3',
+        category: 'ขนม',
+        levelMin: 1,
+        levelMax: 999,
+        isAllLevel: true,
+        step: 10,
+        tiers: [
+          { id: 'pt_7', qty: 10, price: 5.00 },
+          { id: 'pt_8', qty: 50, price: 22.00 },
+          { id: 'pt_9', qty: 100, price: 40.00 }
+        ]
+      }
+    ],
     pin: '123456',
     deletePin: '888888'
   };
@@ -391,15 +508,20 @@
       if (!loadedStore.payment_accounts || !Array.isArray(loadedStore.payment_accounts)) {
         loadedStore.payment_accounts = [];
       }
-      if (!loadedStore.contactChannels || !Array.isArray(loadedStore.contactChannels)) {
-        loadedStore.contactChannels = DEFAULT_STORE_CONFIG.contactChannels;
+      if (!loadedStore.coinFarmBoxes || !Array.isArray(loadedStore.coinFarmBoxes)) {
+        loadedStore.coinFarmBoxes = DEFAULT_STORE_CONFIG.coinFarmBoxes;
       }
-      if (!loadedStore.levelRanges || !Array.isArray(loadedStore.levelRanges)) {
-        loadedStore.levelRanges = DEFAULT_STORE_CONFIG.levelRanges;
+      if (!loadedStore.gameAccounts || !Array.isArray(loadedStore.gameAccounts)) {
+        loadedStore.gameAccounts = DEFAULT_STORE_CONFIG.gameAccounts;
       }
-      if (!loadedStore.categoryPricing || typeof loadedStore.categoryPricing !== 'object') {
-        loadedStore.categoryPricing = DEFAULT_STORE_CONFIG.categoryPricing;
+      if (!loadedStore.priceRules || !Array.isArray(loadedStore.priceRules)) {
+        loadedStore.priceRules = DEFAULT_STORE_CONFIG.priceRules;
       }
+      if (loadedStore.enableItems === undefined) loadedStore.enableItems = true;
+      if (loadedStore.enableCoinFarm === undefined) loadedStore.enableCoinFarm = true;
+      if (loadedStore.enableGameIds === undefined) loadedStore.enableGameIds = true;
+      if (loadedStore.itemClickStep === undefined) loadedStore.itemClickStep = 1;
+      if (loadedStore.priceRatio === undefined) loadedStore.priceRatio = 1.0;
     }
   } catch (e) {}
 
@@ -486,122 +608,6 @@
   }
   const money = (n) => getCurrencySymbol() + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const escapeHTML = (s) => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-  function getProductPriceRule(product) {
-    if (!product) return null;
-    const rules = (state.store?.priceRules && Array.isArray(state.store.priceRules))
-      ? state.store.priceRules
-      : (DEFAULT_STORE_CONFIG.priceRules || []);
-    
-    const pCat = (product.cat || '').trim();
-    const pLevel = parseInt(product.level || 1, 10);
-
-    // 1. Match specific category and specific level range
-    const rangeMatch = rules.find(r => {
-      if (!r || (r.category || '').trim() !== pCat) return false;
-      const isAll = (r.levelDisplay === 'All Level' || r.levelDisplay === 'ทุกเลเวล' || !r.minLevel);
-      if (isAll) return false;
-      const min = parseInt(r.minLevel || 1, 10);
-      const max = parseInt(r.maxLevel || 99999, 10);
-      return pLevel >= min && pLevel <= max;
-    });
-    if (rangeMatch) return rangeMatch;
-
-    // 2. Match specific category and 'All Level'
-    const allLevelMatch = rules.find(r => {
-      if (!r || (r.category || '').trim() !== pCat) return false;
-      return (r.levelDisplay === 'All Level' || r.levelDisplay === 'ทุกเลเวล' || !r.minLevel);
-    });
-    if (allLevelMatch) return allLevelMatch;
-
-    // 3. Fallback: Legacy categoryPricing if any
-    const legacyTiers = state.store?.categoryPricing?.[pCat];
-    if (legacyTiers && Array.isArray(legacyTiers) && legacyTiers.length > 0) {
-      return { category: pCat, levelDisplay: 'All Level', tiers: legacyTiers };
-    }
-
-    return null;
-  }
-
-  function getItemPrice(product, qty = 1) {
-    if (!product) return 0;
-    const nQty = Number(qty || 0);
-    if (nQty <= 0) return 0;
-
-    const rule = getProductPriceRule(product);
-    const catTiers = rule?.tiers;
-
-    if (catTiers && Array.isArray(catTiers) && catTiers.length > 0) {
-      const validTiers = catTiers.filter(t => Number(t.qty) > 0 && Number(t.price) >= 0).sort((a, b) => Number(b.qty) - Number(a.qty));
-      if (validTiers.length > 0) {
-        // Check for exact tier match
-        const exact = validTiers.find(t => Number(t.qty) === nQty);
-        if (exact) return Number(exact.price);
-
-        // Tier breakdown calculation
-        let remaining = nQty;
-        let total = 0;
-        for (const tier of validTiers) {
-          const tQty = Number(tier.qty);
-          const tPrice = Number(tier.price);
-          if (remaining >= tQty) {
-            const count = Math.floor(remaining / tQty);
-            total += count * tPrice;
-            remaining %= tQty;
-          }
-        }
-        if (remaining > 0) {
-          const minTier = validTiers[validTiers.length - 1];
-          const unitRate = minTier ? (Number(minTier.price) / Number(minTier.qty)) : (Number(product.price) || 0);
-          total += remaining * unitRate;
-        }
-        return total;
-      }
-    }
-    return (Number(product.price) || 0) * nQty;
-  }
-
-  function updateTopbarHeader() {
-    const searchWrap = document.getElementById('topbarSearchWrap') || document.querySelector('.topbar .search-wrap') || document.querySelector('.search-wrap');
-    if (!searchWrap) return;
-    if (!state.isAdmin) {
-      const icon = state.store.announcementIcon || '📢';
-      const img = state.store.announcementImage || '';
-      const text = state.store.announcementText || `ยินดีต้อนรับสู่ ${state.store.name || 'Lilith store'} ไอเทมเฮย์เดย์ครบวงจร ส่งไว ตอบแชท 24 ชม.`;
-      const iconHtml = img
-        ? `<img src="${escapeHTML(img)}" alt="" style="width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" /><span style="display:none;">${escapeHTML(icon)}</span>`
-        : `<span>${escapeHTML(icon)}</span>`;
-      searchWrap.className = 'search-wrap marquee-ticker-wrap';
-      searchWrap.innerHTML = `
-        <div class="ticker-icon-badge">${iconHtml}</div>
-        <div class="ticker-track-smooth">
-          <div class="ticker-marquee-inner">
-            <span class="ticker-marquee-text">${escapeHTML(text)}</span>
-            <span class="ticker-marquee-text">${escapeHTML(text)}</span>
-          </div>
-        </div>
-      `;
-      searchWrap.style.cursor = 'default';
-    } else {
-      searchWrap.className = 'search-wrap';
-      searchWrap.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" stroke-linecap="round"/></svg>
-        <input type="text" id="globalSearchInput" placeholder="Search products, orders, customers..." />
-      `;
-      searchWrap.style.cursor = 'text';
-      const globalSearch = searchWrap.querySelector('#globalSearchInput');
-      if (globalSearch) {
-        globalSearch.addEventListener('input', (e) => {
-          const val = e.target.value.toLowerCase().trim();
-          if (val) {
-            state.page = 'products';
-            renderMenu();
-            renderPage();
-          }
-        });
-      }
-    }
-  }
 
   function renderHearts(rating, size = 12) {
     const r = Math.max(1, Math.min(5, Math.round(Number(rating) || 5)));
@@ -915,9 +921,9 @@
 
   let modalCloseTimer = null;
 
-  function openModal({ title, body, actions }) {
+  function openModal({ title, body, actions, width }) {
     const root = $('#modalRoot');
-    if (!root) return;
+    if (!root) return {};
     if (modalCloseTimer) {
       clearTimeout(modalCloseTimer);
       modalCloseTimer = null;
@@ -926,7 +932,7 @@
     const modal = el(`
       <div>
         <div class="modal-backdrop"></div>
-        <div class="modal">
+        <div class="modal" ${width ? `style="max-width:${width}px;"` : ''}>
           <div class="modal-head">
             <div class="modal-title">${escapeHTML(title)}</div>
             <button class="modal-close" aria-label="Close">✕</button>
@@ -936,9 +942,12 @@
         </div>
       </div>
     `);
-    modal.querySelector('.modal-body').append(typeof body === 'string' ? el(`<div>${body}</div>`) : body);
+    const modalBody = modal.querySelector('.modal-body');
+    if (body) {
+      modalBody.append(typeof body === 'string' ? el(`<div>${body}</div>`) : body);
+    }
     const actionsEl = modal.querySelector('.modal-actions');
-    (actions || [{ label: 'Close', kind: 'ghost' }]).forEach(a => {
+    (actions || (body ? [{ label: 'Close', kind: 'ghost' }] : [])).forEach(a => {
       const b = el(`<button class="btn ${a.kind === 'primary' ? 'btn-primary' : a.kind === 'danger' ? 'btn-danger' : 'btn-ghost'}">${escapeHTML(a.label)}</button>`);
       b.addEventListener('click', () => { if (a.onClick) a.onClick(); if (a.close !== false) closeModal(); });
       actionsEl.appendChild(b);
@@ -947,6 +956,7 @@
     requestAnimationFrame(() => root.classList.add('open'));
     modal.querySelector('.modal-close').addEventListener('click', closeModal);
     modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+    return { modal, body: modalBody, actionsEl, root };
   }
 
   function closeModal() {
@@ -2357,7 +2367,6 @@
     if (fn) fn(page);
     window.scrollTo({ top: 0, behavior: 'instant' });
     updateStockNotifications();
-    updateTopbarHeader();
   }
 
   function renderLiveUsersList() {
@@ -2588,12 +2597,11 @@
                 `;
               }
               return lowItems.slice(0, 4).map(p => {
-                const imgUrl = p.image || DEFAULT_PRODUCT_IMG;
                 const statusInfo = getStockStatusInfo(p.stock);
                 return `
                   <div class="flex items-center gap-3" style="padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:var(--card);">
                     <div style="width:38px; height:38px; border-radius:10px; overflow:hidden; background:var(--primary-50); border:1px solid var(--border); flex:none;">
-                      <img src="${escapeHTML(imgUrl)}" alt="${escapeHTML(p.name)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='${DEFAULT_PRODUCT_IMG}';" />
+                      ${renderMediaHtml(p.image, p.name)}
                     </div>
                     <div style="flex:1; min-width:0;">
                       <div style="font-weight:700; font-size:13.5px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(p.name)}</div>
@@ -3070,6 +3078,112 @@
     });
   }
 
+  // Universal Cross-Platform File Downloader (iOS, iPadOS, Android, Windows, Mac)
+  async function downloadFileFromUrl(url, filename = 'download.png') {
+    if (!url) {
+      toast('ไม่มีไฟล์สำหรับดาวน์โหลด', 'error');
+      return;
+    }
+    try {
+      if (url.startsWith('data:')) {
+        const arr = url.split(',');
+        const mime = (arr[0].match(/:(.*?);/) || [])[1] || 'image/png';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+        toast('บันทึกรูปภาพเรียบร้อย', 'success');
+        return;
+      }
+
+      toast('กำลังเตรียมดาวน์โหลดรูปภาพ...', 'info');
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        if (!response.ok) throw new Error('Fetch failed');
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+        toast('ดาวน์โหลดรูปภาพสำเร็จ', 'success');
+      } catch (fetchErr) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        toast('เปิดรูปภาพเพื่อบันทึกเรียบร้อย', 'success');
+      }
+    } catch (err) {
+      console.error('Download error:', err);
+      window.open(url, '_blank');
+    }
+  }
+
+  // Universal Crystal Clear HD Receipt Image Generator & Downloader
+  async function downloadReceiptAsImage(receiptEl, orderId) {
+    if (!receiptEl) return;
+    toast('กำลังสร้างรูปภาพใบเสร็จ...', 'info');
+    const filename = `Receipt-${orderId || Date.now()}.png`;
+
+    try {
+      if (window.html2canvas) {
+        const canvas = await window.html2canvas(receiptEl, {
+          scale: 2.5,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#FFFFFF',
+          ignoreElements: (element) => {
+            return element.id === 'btnTrackOrder' || element.id === 'dlReceipt';
+          }
+        });
+        const dataUrl = canvas.toDataURL('image/png', 1.0);
+        await downloadFileFromUrl(dataUrl, filename);
+        return;
+      }
+    } catch (e) {
+      console.warn('html2canvas capture notice, fallback:', e);
+    }
+
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 440;
+      canvas.height = 720;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, 440, 720);
+      ctx.fillStyle = '#333333';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(state.store.receiptStoreName || state.store.name || 'BNC HayMate', 220, 60);
+      ctx.font = '13px sans-serif';
+      ctx.fillStyle = '#777777';
+      ctx.fillText(`Receipt #${orderId}`, 220, 85);
+      const dataUrl = canvas.toDataURL('image/png');
+      await downloadFileFromUrl(dataUrl, filename);
+    } catch (err) {
+      toast('ไม่สามารถสร้างรูปภาพใบเสร็จได้', 'error');
+    }
+  }
+
   // Universal Cross-Browser Image Compression Helper
   function compressImageToDataUrl(file, maxWidth = 900, maxHeight = 1200, quality = 0.82) {
     return new Promise((resolve, reject) => {
@@ -3272,7 +3386,7 @@
         id: p.id,
         name: p.name,
         cat: p.cat || 'Bakery',
-        image: p.image || DEFAULT_PRODUCT_IMG,
+        image: p.image || '',
         price: Number(p.price || 0),
         qty: 1
       }));
@@ -3287,7 +3401,6 @@
             <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
             <tbody>
               ${itemsList.map((it) => {
-                const imgUrl = it.image || DEFAULT_PRODUCT_IMG;
                 const unitPrice = Number(it.price || 0);
                 const quantity = Number(it.qty || 1);
                 const itemSub = unitPrice * quantity;
@@ -3296,7 +3409,7 @@
                   <td>
                     <div class="flex items-center gap-3">
                       <div style="width:40px; height:40px; border-radius:10px; overflow:hidden; background:var(--primary-50); border:1px solid var(--border); flex:none;">
-                        <img src="${escapeHTML(imgUrl)}" alt="${escapeHTML(it.name || 'Product')}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='${DEFAULT_PRODUCT_IMG}';" />
+                        ${renderMediaHtml(it.image, it.name || 'Product')}
                       </div>
                       <div>
                         <div style="font-weight:700; font-size:13.5px; color:var(--text);">${escapeHTML(it.name || 'Product')}</div>
@@ -3377,9 +3490,10 @@
               <img src="${slipImgSrc}" alt="Payment Slip" style="max-height:260px; max-width:100%; border-radius:8px; object-fit:contain; margin:0 auto; display:block; box-shadow:var(--shadow-soft);" />
             </div>
             
-            <a href="${slipImgSrc}" download="Payment-Slip-${o.id}.png" class="btn btn-primary btn-block mt-3" style="text-align:center; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px; font-weight:700;">
-              ดาวน์โหลดสลิป (Download Slip)
-            </a>
+            <button type="button" id="btnDownloadSlipFile" class="btn btn-primary btn-block mt-3" style="text-align:center; display:flex; align-items:center; justify-content:center; gap:6px; font-weight:700; cursor:pointer;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span>ดาวน์โหลดรูปภาพสลิป (Download Slip)</span>
+            </button>
           ` : `
             <div style="text-align:center; padding:24px 16px; color:var(--muted); background:var(--primary-50); border:1px dashed var(--border); border-radius:12px; margin-top:8px;">
               <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" style="margin:0 auto 6px; display:block; color:var(--muted);"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
@@ -3390,6 +3504,10 @@
         </div>
       </div>
     `));
+
+    grid.querySelector('#btnDownloadSlipFile')?.addEventListener('click', () => {
+      downloadFileFromUrl(slipImgSrc, `Payment-Slip-${o.id}.png`);
+    });
 
     grid.querySelectorAll('.btn-copy-farmtag').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -3420,67 +3538,1039 @@
   }
 
   // ============================================================
-  // PAGE 3: Products (POS Register & Catalog)
+  // UNIVERSAL CART ITEM RESOLVER (Items, Coin Farming, Game IDs)
   // ============================================================
-  PAGES.products = (root) => {
-    root.appendChild(el(`
-      <div class="page-head">
-        <div>
-          <h1 class="page-title">Products</h1>
-          <div class="page-sub">Catalog, POS and inventory</div>
-        </div>
-        <button class="btn btn-primary" id="addProduct">+ Add Product</button>
-      </div>
-    `));
-    root.querySelector('#addProduct').addEventListener('click', () => openAddProductModal());
+  function findProductPriceRule(product) {
+    if (!product) return null;
+    const rules = state.store?.priceRules || [];
+    const pCat = product.cat || '';
+    const pLvl = Number(product.level) || 1;
+    return rules.find(r => {
+      const catMatch = !r.category || r.category === 'All' || r.category === 'ทุกหมวดหมู่' || r.category === pCat;
+      if (!catMatch) return false;
+      if (r.isAllLevel) return true;
+      const min = Number(r.levelMin) || 1;
+      const max = Number(r.levelMax) || 9999;
+      return pLvl >= min && pLvl <= max;
+    });
+  }
 
-    const filter = el(`
-      <div class="filter-bar">
-        <div class="search-wrap" style="flex:1; max-width:none">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" stroke-linecap="round"/></svg>
-          <input placeholder="Search products..." id="prodSearch"/>
+  function getProductClickStep(product) {
+    const rule = findProductPriceRule(product);
+    if (rule && rule.step) return Number(rule.step);
+    return Number(state.store?.itemClickStep) || 1;
+  }
+
+  function calculateCartItemPrice(id, qty) {
+    const item = getCartItemDetails(id);
+    if (!item) return 0;
+    const q = Number(qty) || 1;
+    if (item.type === 'item') {
+      const p = PRODUCTS.find(x => String(x.id) === String(id));
+      const rule = findProductPriceRule(p);
+      if (rule && rule.tiers && rule.tiers.length > 0) {
+        const sortedTiers = [...rule.tiers].sort((a, b) => b.qty - a.qty);
+        const matchedTier = sortedTiers.find(t => q >= t.qty);
+        if (matchedTier && matchedTier.qty > 0) {
+          const unitRate = Number(matchedTier.price) / Number(matchedTier.qty);
+          return Math.round(unitRate * q * 100) / 100;
+        }
+      }
+    }
+    return Math.round(Number(item.price) * q * 100) / 100;
+  }
+
+  function getCartItemDetails(key) {
+    const k = String(key || '').trim();
+    if (!k) return null;
+
+    if (k.startsWith('cf_tier_')) {
+      const raw = k.slice('cf_tier_'.length);
+      const boxes = state.store?.coinFarmBoxes || DEFAULT_STORE_CONFIG.coinFarmBoxes || [];
+      for (const box of boxes) {
+        for (const tier of (box.tiers || [])) {
+          if (raw === `${box.id}_${tier.id}` || raw === tier.id || raw.endsWith(`_${tier.id}`)) {
+            return {
+              id: k,
+              rawId: tier.id,
+              boxId: box.id,
+              type: 'coin_farm',
+              name: `วนเหรียญ: ${tier.coins} (${box.title})`,
+              cat: 'วนเหรียญ',
+              price: Number(tier.price || 0),
+              stock: 9999,
+              desc: tier.desc || box.title,
+              image: ''
+            };
+          }
+        }
+      }
+    } else if (k.startsWith('game_acc_')) {
+      const accId = k.slice('game_acc_'.length);
+      const accounts = state.store?.gameAccounts || DEFAULT_STORE_CONFIG.gameAccounts || [];
+      const acc = accounts.find(a => String(a.id) === String(accId));
+      if (acc) {
+        return {
+          id: k,
+          rawId: acc.id,
+          type: 'game_account',
+          name: `[${acc.code}] ${acc.title}`,
+          cat: 'ID Game',
+          price: Number(acc.price || 0),
+          stock: acc.status === 'available' ? 1 : 0,
+          desc: acc.details || '',
+          image: (acc.images && acc.images[0]) || '',
+          account: acc
+        };
+      }
+    }
+
+    const p = PRODUCTS.find(x => String(x.id) === k);
+    if (p) {
+      const ratio = Number(state.store?.priceRatio) || 1.0;
+      let effectivePrice = Math.round(Number(p.price || 0) * ratio * 100) / 100;
+      const rule = findProductPriceRule(p);
+      if (rule && rule.tiers && rule.tiers.length > 0) {
+        const firstTier = rule.tiers[0];
+        if (firstTier && firstTier.qty > 0) {
+          effectivePrice = Math.round((firstTier.price / firstTier.qty) * 100) / 100;
+        }
+      }
+      return {
+        id: p.id,
+        rawId: p.id,
+        type: 'item',
+        name: p.name,
+        cat: p.cat || 'Item',
+        price: effectivePrice,
+        stock: Number(p.stock !== undefined ? p.stock : 0),
+        desc: p.flavor || p.description || '',
+        image: p.image || '',
+        level: p.level || 1,
+        rule: rule
+      };
+    }
+    return null;
+  }
+
+  // Custom Popup Multi-select Dropdown Component (Categories & Levels)
+  function createMultiDropdown({ buttonLabel, options, selectedValues = [], onSelect, entityName = 'หมวดหมู่' }) {
+    let currentVals = new Set(selectedValues.filter(Boolean));
+
+    const wrap = el(`
+      <div class="custom-dropdown-wrap">
+        <button type="button" class="custom-dropdown-btn">
+          <span class="btn-text">${escapeHTML(buttonLabel)}</span>
+          <span class="dropdown-arrow">▼</span>
+        </button>
+        <div class="custom-dropdown-menu">
+          <div class="custom-dropdown-option opt-all ${currentVals.size === 0 ? 'selected' : ''}" data-val="">
+            <span class="custom-radio ${currentVals.size === 0 ? 'checked' : ''}"></span>
+            <span>ทุก${escapeHTML(entityName)} (All ${escapeHTML(entityName)})</span>
+          </div>
+          ${options.map(opt => `
+            <div class="custom-dropdown-option opt-item ${currentVals.has(opt.value) ? 'selected' : ''}" data-val="${escapeHTML(opt.value)}">
+              <span class="custom-radio ${currentVals.has(opt.value) ? 'checked' : ''}"></span>
+              <span>${escapeHTML(opt.label)}</span>
+            </div>
+          `).join('')}
         </div>
-        <select class="select" id="prodCat">
-          <option value="">All categories</option>
-          ${CATEGORIES.map(c => `<option>${c.name}</option>`).join('')}
-        </select>
       </div>
     `);
-    root.appendChild(filter);
 
-    const meta = el(`<div class="flex items-center" style="justify-content:space-between; margin-bottom:10px; color:var(--muted); font-size:12.5px"><span id="prodCount"></span><span>Tap to add · Right-click to remove</span></div>`);
-    root.appendChild(meta);
+    const btn = wrap.querySelector('.custom-dropdown-btn');
+    const menu = wrap.querySelector('.custom-dropdown-menu');
+    const btnText = wrap.querySelector('.btn-text');
+    const arrow = wrap.querySelector('.dropdown-arrow');
 
-    const grid = el(`<div class="product-grid"></div>`);
-    root.appendChild(grid);
+    const updateUI = () => {
+      if (currentVals.size === 0) {
+        btnText.textContent = buttonLabel;
+        btn.classList.remove('active');
+      } else {
+        btnText.textContent = `${entityName} (${currentVals.size})`;
+        btn.classList.add('active');
+      }
 
-    const pager = el(`<div class="pagination" id="prodPager"></div>`);
-    root.appendChild(pager);
+      const optAll = wrap.querySelector('.opt-all');
+      if (optAll) {
+        const isAll = (currentVals.size === 0);
+        optAll.classList.toggle('selected', isAll);
+        optAll.querySelector('.custom-radio')?.classList.toggle('checked', isAll);
+      }
 
+      wrap.querySelectorAll('.opt-item').forEach(item => {
+        const v = item.dataset.val;
+        const isSel = currentVals.has(v);
+        item.classList.toggle('selected', isSel);
+        item.querySelector('.custom-radio')?.classList.toggle('checked', isSel);
+      });
+    };
+
+    updateUI();
+
+    const toggle = (show) => {
+      const willShow = show !== undefined ? show : !menu.classList.contains('show');
+      document.querySelectorAll('.custom-dropdown-menu.show').forEach(m => {
+        if (m !== menu) {
+          m.classList.remove('show');
+          m.closest('.custom-dropdown-wrap')?.querySelector('.custom-dropdown-btn')?.classList.remove('active');
+          const a = m.closest('.custom-dropdown-wrap')?.querySelector('.dropdown-arrow');
+          if (a) a.textContent = '▼';
+        }
+      });
+
+      if (willShow) {
+        const rect = btn.getBoundingClientRect();
+        const viewportW = window.innerWidth;
+        const menuW = 240;
+        let left = rect.left;
+        if (left + menuW > viewportW - 8) left = Math.max(8, viewportW - menuW - 8);
+        menu.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+        menu.style.left = left + 'px';
+        menu.style.width = menuW + 'px';
+      }
+
+      menu.classList.toggle('show', willShow);
+      btn.classList.toggle('active', willShow || currentVals.size > 0);
+      arrow.textContent = willShow ? '▲' : '▼';
+    };
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggle();
+    });
+
+    wrap.querySelector('.opt-all')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      currentVals.clear();
+      updateUI();
+      if (onSelect) onSelect([]);
+    });
+
+    wrap.querySelectorAll('.opt-item').forEach(optEl => {
+      optEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const val = optEl.dataset.val;
+        if (currentVals.has(val)) {
+          currentVals.delete(val);
+        } else {
+          currentVals.add(val);
+        }
+        updateUI();
+        if (onSelect) onSelect(Array.from(currentVals));
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(e.target)) toggle(false);
+    });
+
+    return {
+      element: wrap,
+      getValues: () => Array.from(currentVals),
+      setValues: (vals = []) => {
+        currentVals = new Set(vals.filter(Boolean));
+        updateUI();
+      }
+    };
+  }
+
+  const createCustomDropdown = createMultiDropdown;
+
+  // Category Manager Modal (in Product -> Item)
+  function openManageCategoriesModal() {
+    const { modal, body } = openModal({
+      title: `จัดการหมวดหมู่สินค้า (${CATEGORIES.length} หมวดหมู่)`,
+      width: 500
+    });
+
+    const renderList = () => {
+      body.innerHTML = '';
+      const content = el(`
+        <div>
+          <!-- Add Category Input Row -->
+          <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <input class="input" id="newCatNameInput" placeholder="ชื่อหมวดหมู่ใหม่..." style="flex:1;" />
+            <button type="button" class="btn btn-primary" id="btnAddNewCat" style="font-weight:700; white-space:nowrap;">
+              + เพิ่มหมวดหมู่
+            </button>
+          </div>
+
+          <div style="font-weight:800; font-size:13px; color:var(--muted); margin-bottom:8px;">รายการหมวดหมู่ทั้งหมด</div>
+          <div style="display:flex; flex-direction:column; gap:8px; max-height:360px; overflow-y:auto;" id="modalCatItemsList">
+            ${CATEGORIES.map((c, idx) => {
+              const count = PRODUCTS.filter(p => p.cat === c.name).length;
+              return `
+                <div class="card" style="margin:0; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--card);">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-weight:800; font-size:14px; color:var(--text);">${escapeHTML(c.name)}</span>
+                    <span class="badge" style="font-size:11px; background:var(--primary-50);">${count} รายการ</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button type="button" class="btn btn-sm btn-ghost btn-rename-cat" data-idx="${idx}" style="padding:4px 8px; font-size:12px;" title="แก้ไขชื่อ">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-ghost btn-delete-cat" data-idx="${idx}" style="padding:4px 8px; font-size:12px; color:var(--danger);" title="ลบหมวดหมู่">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `);
+      body.appendChild(content);
+
+      content.querySelector('#btnAddNewCat')?.addEventListener('click', async () => {
+        const nameInp = content.querySelector('#newCatNameInput');
+        const name = nameInp?.value.trim();
+        if (!name) return toast('กรุณาระบุชื่อหมวดหมู่', 'error');
+        if (CATEGORIES.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+          return toast('มีหมวดหมู่นี้อยู่แล้ว', 'error');
+        }
+        CATEGORIES.push({ name, count: 0 });
+        if (supabase) {
+          try { await supabase.from('categories').insert([{ name }]); } catch (e) {}
+        }
+        try { localStorage.setItem('haypos_categories', JSON.stringify(CATEGORIES)); } catch(e) {}
+        toast(`เพิ่มหมวดหมู่ "${name}" เรียบร้อยแล้ว`, 'success');
+        renderList();
+        const mainContent = document.getElementById('adminProductTabContent');
+        if (mainContent && state.adminProductTab === 'items') renderAdminItemsTab(mainContent);
+      });
+
+      content.querySelectorAll('.btn-rename-cat').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const idx = +btn.dataset.idx;
+          const cat = CATEGORIES[idx];
+          const newName = prompt('แก้ไขชื่อหมวดหมู่:', cat.name);
+          if (!newName || newName.trim() === '' || newName.trim() === cat.name) return;
+          const oldName = cat.name;
+          cat.name = newName.trim();
+          PRODUCTS.forEach(p => { if (p.cat === oldName) p.cat = cat.name; });
+          if (supabase) {
+            try {
+              await supabase.from('categories').update({ name: cat.name }).eq('name', oldName);
+              await supabase.from('products').update({ cat: cat.name }).eq('cat', oldName);
+            } catch (e) {}
+          }
+          persistProducts();
+          try { localStorage.setItem('haypos_categories', JSON.stringify(CATEGORIES)); } catch(e) {}
+          toast(`เปลี่ยนชื่อหมวดหมู่เป็น "${cat.name}" แล้ว`, 'success');
+          renderList();
+          const mainContent = document.getElementById('adminProductTabContent');
+          if (mainContent && state.adminProductTab === 'items') renderAdminItemsTab(mainContent);
+        });
+      });
+
+      content.querySelectorAll('.btn-delete-cat').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const idx = +btn.dataset.idx;
+          const cat = CATEGORIES[idx];
+          const hasProds = PRODUCTS.some(p => p.cat === cat.name);
+          if (hasProds) {
+            if (!confirm(`หมวดหมู่ "${cat.name}" มีสินค้าอยู่ ต้องการลบหรือไม่ (สินค้าจะถูกย้ายไปหมวดหมู่ทั่วไป)?`)) return;
+            PRODUCTS.forEach(p => { if (p.cat === cat.name) p.cat = 'Other'; });
+            persistProducts();
+          } else {
+            if (!confirm(`คุณต้องการลบหมวดหมู่ "${cat.name}" ใช่หรือไม่?`)) return;
+          }
+          CATEGORIES.splice(idx, 1);
+          if (supabase) {
+            try { await supabase.from('categories').delete().eq('name', cat.name); } catch(e) {}
+          }
+          try { localStorage.setItem('haypos_categories', JSON.stringify(CATEGORIES)); } catch(e) {}
+          toast(`ลบหมวดหมู่ "${cat.name}" เรียบร้อยแล้ว`, 'info');
+          renderList();
+          const mainContent = document.getElementById('adminProductTabContent');
+          if (mainContent && state.adminProductTab === 'items') renderAdminItemsTab(mainContent);
+        });
+      });
+    };
+
+    renderList();
+  }
+
+  // ============================================================
+  // PAGE 3: Product Settings & Management Hub (Item HayDay, วนเหรียญ, ID Game)
+  // ============================================================
+  state.adminProductTab = state.adminProductTab || 'items';
+
+  PAGES.products = (root) => {
+    const tabTitle1 = state.store.itemsTabTitle || '1. Item HayDay';
+    const tabTitle2 = state.store.coinFarmTabTitle || '2. วนเหรียญ (Coin Farming)';
+    const tabTitle3 = state.store.gameIdsTabTitle || '3. ID Game (ไอดีเกม)';
+
+    root.appendChild(el(`
+      <div class="page-head">
+        <div style="flex:1;">
+          <h1 class="page-title">Products &amp; Services</h1>
+          <div class="page-sub">จัดการสินค้าไอเทม บริการวนเหรียญ และตลาดซื้อขายไอดีเกม</div>
+        </div>
+        <div>
+          <button type="button" class="btn btn-sm btn-ghost" id="btnAdminRenameTabs" style="border:1.5px solid var(--border); font-weight:700; border-radius:12px; padding:7px 14px; color:var(--accent-text);">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+            <span>ตั้งชื่อหัวข้อแท็บ (Rename Tabs)</span>
+          </button>
+        </div>
+      </div>
+    `));
+
+    // 3 Sub-tabs Navigation (Customizable Titles)
+    const hubNav = el(`
+      <div class="product-hub-nav">
+        <button type="button" class="hub-tab-btn ${state.adminProductTab === 'items' ? 'active' : ''}" data-tab="items">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          <span id="labelTab1">${escapeHTML(tabTitle1)}</span>
+        </button>
+        <button type="button" class="hub-tab-btn ${state.adminProductTab === 'coin_farm' ? 'active' : ''}" data-tab="coin_farm">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9h-4a1.5 1.5 0 0 0 0 3h3a1.5 1.5 0 0 1 0 3h-4"/><path d="M12 7v10"/></svg>
+          <span id="labelTab2">${escapeHTML(tabTitle2)}</span>
+        </button>
+        <button type="button" class="hub-tab-btn ${state.adminProductTab === 'game_ids' ? 'active' : ''}" data-tab="game_ids">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="15" x="2" y="5" rx="3"/><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01"/></svg>
+          <span id="labelTab3">${escapeHTML(tabTitle3)}</span>
+        </button>
+      </div>
+    `);
+    root.appendChild(hubNav);
+
+    const contentContainer = el(`<div id="adminProductTabContent"></div>`);
+    root.appendChild(contentContainer);
+
+    hubNav.querySelectorAll('.hub-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.adminProductTab = btn.dataset.tab;
+        hubNav.querySelectorAll('.hub-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+        renderActiveProductTab();
+      });
+    });
+
+    root.querySelector('#btnAdminRenameTabs')?.addEventListener('click', () => openRenameProductTabsModal(root));
+
+    function renderActiveProductTab() {
+      contentContainer.innerHTML = '';
+      if (state.adminProductTab === 'items') {
+        renderAdminItemsTab(contentContainer);
+      } else if (state.adminProductTab === 'coin_farm') {
+        renderAdminCoinFarmTab(contentContainer);
+      } else if (state.adminProductTab === 'game_ids') {
+        renderAdminGameIdsTab(contentContainer);
+      }
+    }
+
+    renderActiveProductTab();
+  };
+
+  function openRenameProductTabsModal(pageRoot) {
+    const cur1 = state.store.itemsTabTitle || '1. Item HayDay';
+    const cur2 = state.store.coinFarmTabTitle || '2. วนเหรียญ (Coin Farming)';
+    const cur3 = state.store.gameIdsTabTitle || '3. ID Game (ไอดีเกม)';
+
+    const body = el(`
+      <div class="grid" style="gap:14px;">
+        <div class="field">
+          <label style="font-weight:700; font-size:12.5px;">ชื่อหัวข้อแท็บที่ 1 (Tab 1 Title)</label>
+          <input class="input" id="inpTabTitle1" value="${escapeHTML(cur1)}" placeholder="1. Item HayDay" style="padding:10px 14px; font-size:13.5px; border-radius:12px;" />
+        </div>
+        <div class="field">
+          <label style="font-weight:700; font-size:12.5px;">ชื่อหัวข้อแท็บที่ 2 (Tab 2 Title)</label>
+          <input class="input" id="inpTabTitle2" value="${escapeHTML(cur2)}" placeholder="2. วนเหรียญ (Coin Farming)" style="padding:10px 14px; font-size:13.5px; border-radius:12px;" />
+        </div>
+        <div class="field">
+          <label style="font-weight:700; font-size:12.5px;">ชื่อหัวข้อแท็บที่ 3 (Tab 3 Title)</label>
+          <input class="input" id="inpTabTitle3" value="${escapeHTML(cur3)}" placeholder="3. ID Game (ไอดีเกม)" style="padding:10px 14px; font-size:13.5px; border-radius:12px;" />
+        </div>
+      </div>
+    `);
+
+    openModal({
+      title: 'แก้ไขชื่อหัวข้อสินค้าและบริการ (Rename Tabs)',
+      body,
+      width: 480,
+      actions: [
+        {
+          label: 'คืนค่าเริ่มต้น',
+          kind: 'ghost',
+          close: false,
+          onClick: () => {
+            body.querySelector('#inpTabTitle1').value = '1. Item HayDay';
+            body.querySelector('#inpTabTitle2').value = '2. วนเหรียญ (Coin Farming)';
+            body.querySelector('#inpTabTitle3').value = '3. ID Game (ไอดีเกม)';
+          }
+        },
+        {
+          label: 'บันทึกการเปลี่ยนชื่อ',
+          kind: 'primary',
+          onClick: () => {
+            state.store.itemsTabTitle = body.querySelector('#inpTabTitle1')?.value.trim() || '1. Item HayDay';
+            state.store.coinFarmTabTitle = body.querySelector('#inpTabTitle2')?.value.trim() || '2. วนเหรียญ (Coin Farming)';
+            state.store.gameIdsTabTitle = body.querySelector('#inpTabTitle3')?.value.trim() || '3. ID Game (ไอดีเกม)';
+            syncStoreSettingsAcrossDevices();
+            toast('บันทึกชื่อหัวข้อเรียบร้อยแล้ว', 'success');
+            pageRoot.innerHTML = '';
+            PAGES.products(pageRoot);
+          }
+        }
+      ]
+    });
+  }
+
+  // --- TAB 1: Item HayDay Management ---
+  function renderAdminItemsTab(container) {
+    const priceRules = state.store.priceRules || [];
+    if (!state.store.levels || state.store.levels.length === 0) {
+      state.store.levels = ['Lv. 1 – 20', 'Lv. 21 – 40', 'Lv. 41 – 60', 'Lv. 61 – 80', 'Lv. 81 – 100+'];
+    }
+
+    const wrap = el(`
+      <div>
+        <!-- Module Toggle & Page Header Row (Image 4 & 5) -->
+        <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+          <div>
+            <h1 class="page-title" style="font-size:24px; font-weight:800; margin:0 0 4px 0;">Categories &amp; Products</h1>
+            <div class="page-sub" style="font-size:13px; color:var(--muted);">จัดการหมวดหมู่และสร้างสินค้าใหม่พร้อมรูปภาพได้ไม่อั้น</div>
+          </div>
+          <div class="flex gap-2" style="flex-wrap:wrap; align-items:center;">
+            <button type="button" class="btn btn-primary" id="btnHeaderNewCat" style="font-weight:700; border-radius:12px; padding:8px 18px;">
+              + New Category
+            </button>
+            <button type="button" class="btn btn-primary" id="btnHeaderCreateProd" style="font-weight:700; border-radius:12px; padding:8px 18px;">
+              + Create Product
+            </button>
+          </div>
+        </div>
+
+        <div class="module-switch-row" style="margin-bottom:16px;">
+          <div>
+            <strong style="font-size:13.5px; color:var(--text);">เปิดขายสินค้าไอเทมในหน้าร้าน (Enable Items Storefront)</strong>
+            <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">เมื่อเปิด สินค้าไอเทมจะแสดงในหน้าร้านและหน้าแรก หากปิดจะซ่อนเฉพาะหมวดนี้</div>
+          </div>
+          <label class="clean-switch">
+            <input type="checkbox" id="swEnableItems" ${state.store.enableItems !== false ? 'checked' : ''} />
+            <span class="clean-slider"></span>
+          </label>
+        </div>
+
+        <!-- SECTION 1: All Categories (Image 4 & 5) -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+            <div>
+              <div class="card-title" style="font-size:16.5px; font-weight:800;">All Categories (${CATEGORIES.length})</div>
+              <div class="card-sub" style="font-size:12px; color:var(--muted); margin-top:2px;">คลิกที่หมวดหมู่เพื่อดูสินค้า หรือกดปุ่ม + เพื่อเพิ่มสินค้านั้นๆ ได้ไม่จำกัด</div>
+            </div>
+            <div class="search-wrap" style="min-width:200px; max-width:280px; border-radius:24px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" stroke-linecap="round"/></svg>
+              <input placeholder="Search catalog..." id="adminCatSearch" />
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px;" id="adminCategoriesGrid"></div>
+        </div>
+
+        <!-- SECTION 2: Level Classification (Image 4 & 5) -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+            <div>
+              <div class="card-title" style="font-size:15.5px; font-weight:800;">Level Classification (หมวดหมู่เลเวลสินค้าในเกม)</div>
+              <div class="card-sub" style="font-size:12px; color:var(--muted); margin-top:2px;">ตั้งค่าช่วงเลเวลเพื่อใช้กรองในหน้าสินค้าของลูกค้า (All Levels Multi-Dropdown)</div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="btnAddLevelBadge" style="font-weight:700; border-radius:10px; padding:6px 14px;">
+              + เพิ่มช่วงเลเวลใหม่
+            </button>
+          </div>
+
+          <div style="display:flex; flex-wrap:wrap; gap:10px;" id="adminLevelsBadgesList">
+            ${(state.store.levels || []).map((lvl, idx) => `
+              <span class="admin-lvl-badge">
+                <span>${escapeHTML(lvl)}</span>
+                <span class="btn-del-lvl" data-idx="${idx}" title="ลบช่วงเลเวลนี้">✕</span>
+              </span>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- SECTION 3: Setting Price (ตั้งค่าราคา & สเต็ปตามเลเวลและหมวดหมู่) -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+            <div>
+              <h2 style="font-size:17.5px; font-weight:800; color:var(--text); margin:0 0 3px 0;">Setting Price (ตั้งค่าราคา &amp; สเต็ปตามเลเวลและหมวดหมู่)</h2>
+              <div style="font-size:12px; color:var(--muted);">จัดการกำหนดสเต็ปราคาสินค้าขายส่งตามหมวดหมู่และช่วงเลเวล (เช่น อาหารสัตว์ Lv. 1–75, Lv. 76–256 หรือ All Level)</div>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnAddPriceRuleBox" style="font-weight:800; border-radius:12px; font-size:12.5px; padding:7px 16px;">
+              + เพิ่มกล่องราคาใหม่ (+ Add Price Rule Box)
+            </button>
+          </div>
+
+          <div style="font-weight:800; font-size:13.5px; color:var(--text); margin-bottom:12px;">
+            กล่องราคาที่เปิดใช้งาน (${priceRules.length} กล่อง)
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px;" id="priceRulesGrid"></div>
+        </div>
+
+        <!-- SECTION 4: Products Catalog -->
+        <div class="card" style="margin-bottom:14px;">
+          <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div>
+              <div class="card-title" style="font-size:16.5px; font-weight:800;">Products Catalog (${PRODUCTS.length} total)</div>
+              <div class="card-sub" style="font-size:12px; color:var(--muted);">รายการสินค้าทั้งหมดพร้อมรูปภาพ สามารถแก้ไขหรือเพิ่มใหม่ได้ไม่จำกัด</div>
+            </div>
+            <div class="flex gap-2" style="flex-wrap:wrap;">
+              <button class="btn btn-primary" id="btnAddItemProduct">+ Create Product</button>
+            </div>
+          </div>
+
+          <!-- Custom Popup Multi-Dropdowns Toolbar -->
+          <div class="filter-bar" style="margin-top:14px; flex-wrap:wrap; gap:10px; align-items:center;">
+            <div class="search-wrap" style="flex:1; min-width:180px; max-width:280px; border-radius:24px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" stroke-linecap="round"/></svg>
+              <input placeholder="Search items..." id="adminItemSearch"/>
+            </div>
+            <div id="adminCatDropdownSlot"></div>
+            <div id="adminLevelDropdownSlot"></div>
+            <button type="button" class="btn btn-sm btn-ghost" id="btnAdminResetFilters" style="border:1.5px solid var(--border); font-weight:700; padding:7px 14px; border-radius:20px;">
+              ล้างค่า (Reset)
+            </button>
+          </div>
+
+          <div class="flex items-center" style="justify-content:space-between; margin-bottom:10px; color:var(--muted); font-size:12.5px">
+            <span id="adminItemCount"></span>
+            <span>Tap to add · Right-click to edit/manage</span>
+          </div>
+
+          <div class="product-grid" id="adminItemGrid"></div>
+          <div class="pagination" id="adminItemPager"></div>
+        </div>
+      </div>
+    `);
+    container.appendChild(wrap);
+
+    // Module Switch
+    wrap.querySelector('#swEnableItems')?.addEventListener('change', (e) => {
+      state.store.enableItems = e.target.checked;
+      syncStoreSettingsAcrossDevices();
+      toast(state.store.enableItems ? 'เปิดการแสดงผลหมวด Item ในหน้าร้านแล้ว' : 'ปิดการแสดงผลหมวด Item ในหน้าร้านแล้ว', 'info');
+    });
+
+    // Render Admin Category Cards (Image 4 & 5)
+    const catGrid = wrap.querySelector('#adminCategoriesGrid');
+    const catSearchInp = wrap.querySelector('#adminCatSearch');
+    const renderCatCards = () => {
+      if (!catGrid) return;
+      const q = (catSearchInp?.value || '').toLowerCase().trim();
+      const filtered = CATEGORIES.filter(c => !q || c.name.toLowerCase().includes(q));
+      catGrid.innerHTML = '';
+      if (!filtered.length) {
+        catGrid.innerHTML = `<div style="grid-column:1/-1; padding:20px; text-align:center; color:var(--muted);">ไม่พบหมวดหมู่ที่ค้นหา</div>`;
+        return;
+      }
+      filtered.forEach((c) => {
+        const count = PRODUCTS.filter(p => p.cat === c.name).length;
+        const initial = c.name.slice(0, 2);
+        const card = el(`
+          <div class="admin-category-card">
+            <div class="flex items-center" style="justify-content:space-between;">
+              <div class="admin-cat-initial-box">${escapeHTML(initial)}</div>
+              <span class="badge" style="font-size:11.5px; font-weight:700; background:var(--primary-50); color:var(--accent-text); border:1px solid var(--border); border-radius:12px; padding:4px 10px;">${count} items</span>
+            </div>
+            <div>
+              <div style="font-size:15px; font-weight:800; color:var(--text);">${escapeHTML(c.name)}</div>
+              <div style="font-size:12px; color:var(--muted); margin-top:2px;">${count} products in catalog</div>
+            </div>
+            <div class="flex gap-2" style="margin-top:4px;">
+              <button type="button" class="btn btn-primary btn-sm btn-cat-add-prod" style="flex:1; font-size:12px; font-weight:700; padding:6px 10px;">
+                + Add Product
+              </button>
+              <button type="button" class="btn btn-sm btn-ghost btn-cat-edit" style="padding:6px 10px; border:1px solid var(--border); border-radius:10px;" title="แก้ไขชื่อ">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </button>
+              <button type="button" class="btn btn-sm btn-ghost btn-cat-del" style="padding:6px 10px; border:1px solid var(--border); border-radius:10px; color:var(--danger);" title="ลบหมวดหมู่">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>
+        `);
+        card.querySelector('.btn-cat-add-prod')?.addEventListener('click', () => openAddProductModal(null, c.name));
+        card.querySelector('.btn-cat-edit')?.addEventListener('click', () => openEditCategoryModal(c));
+        card.querySelector('.btn-cat-del')?.addEventListener('click', async () => {
+          const hasProds = PRODUCTS.some(p => p.cat === c.name);
+          if (hasProds) {
+            if (!confirm(`หมวดหมู่ "${c.name}" มีสินค้าอยู่ ต้องการลบหรือไม่ (สินค้าจะถูกย้ายไปหมวดหมู่ทั่วไป)?`)) return;
+            PRODUCTS.forEach(p => { if (p.cat === c.name) p.cat = 'Other'; });
+            persistProducts();
+          } else {
+            if (!confirm(`คุณต้องการลบหมวดหมู่ "${c.name}" ใช่หรือไม่?`)) return;
+          }
+          const cIdx = CATEGORIES.findIndex(x => x.name === c.name);
+          if (cIdx !== -1) CATEGORIES.splice(cIdx, 1);
+          if (supabase) {
+            try { await supabase.from('categories').delete().eq('name', c.name); } catch(e) {}
+          }
+          try { localStorage.setItem('haypos_categories', JSON.stringify(CATEGORIES)); } catch(e) {}
+          toast(`ลบหมวดหมู่ "${c.name}" เรียบร้อยแล้ว`, 'info');
+          renderAdminItemsTab(container);
+        });
+        catGrid.appendChild(card);
+      });
+    };
+    renderCatCards();
+    catSearchInp?.addEventListener('input', renderCatCards);
+
+    function openNewCategoryModal() {
+      const body = el(`
+        <div class="grid" style="gap:14px;">
+          <div class="field">
+            <label style="font-weight:700; font-size:12.5px; color:var(--text);">ชื่อหมวดหมู่ใหม่ (Category Name) *</label>
+            <input class="input" id="inpNewCatName" placeholder="เช่น อาหารสัตว์, ขนม, อุปกรณ์ฟาร์ม" style="padding:10px 14px; font-size:13.5px; border-radius:12px;" />
+          </div>
+        </div>
+      `);
+      openModal({
+        title: 'เพิ่มหมวดหมู่ใหม่ (+ New Category)',
+        body,
+        width: 440,
+        actions: [
+          { label: 'ยกเลิก', kind: 'ghost' },
+          {
+            label: 'บันทึกหมวดหมู่',
+            kind: 'primary',
+            onClick: async () => {
+              const name = body.querySelector('#inpNewCatName')?.value.trim();
+              if (!name) return toast('กรุณากรอกชื่อหมวดหมู่', 'error');
+              if (CATEGORIES.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+                return toast('มีหมวดหมู่นี้อยู่แล้ว', 'error');
+              }
+              CATEGORIES.push({ name, count: 0 });
+              if (supabase) {
+                try { await supabase.from('categories').insert([{ name }]); } catch(e) {}
+              }
+              try { localStorage.setItem('haypos_categories', JSON.stringify(CATEGORIES)); } catch(e) {}
+              toast(`เพิ่มหมวดหมู่ "${name}" เรียบร้อยแล้ว`, 'success');
+              renderAdminItemsTab(container);
+            }
+          }
+        ]
+      });
+      setTimeout(() => body.querySelector('#inpNewCatName')?.focus(), 80);
+    }
+
+    function openEditCategoryModal(c) {
+      const body = el(`
+        <div class="grid" style="gap:14px;">
+          <div class="field">
+            <label style="font-weight:700; font-size:12.5px; color:var(--text);">ชื่อหมวดหมู่ (Category Name) *</label>
+            <input class="input" id="inpEditCatName" value="${escapeHTML(c.name)}" style="padding:10px 14px; font-size:13.5px; border-radius:12px;" />
+          </div>
+        </div>
+      `);
+      openModal({
+        title: 'แก้ไขชื่อหมวดหมู่ (Edit Category)',
+        body,
+        width: 440,
+        actions: [
+          { label: 'ยกเลิก', kind: 'ghost' },
+          {
+            label: 'บันทึกการแก้ไข',
+            kind: 'primary',
+            onClick: async () => {
+              const newName = body.querySelector('#inpEditCatName')?.value.trim();
+              if (!newName) return toast('กรุณากรอกชื่อหมวดหมู่', 'error');
+              if (newName === c.name) return;
+              const oldName = c.name;
+              c.name = newName;
+              PRODUCTS.forEach(p => { if (p.cat === oldName) p.cat = c.name; });
+              if (supabase) {
+                try {
+                  await supabase.from('categories').update({ name: c.name }).eq('name', oldName);
+                  await supabase.from('products').update({ cat: c.name }).eq('cat', oldName);
+                } catch(e) {}
+              }
+              persistProducts();
+              try { localStorage.setItem('haypos_categories', JSON.stringify(CATEGORIES)); } catch(e) {}
+              toast(`เปลี่ยนชื่อหมวดหมู่เป็น "${c.name}" แล้ว`, 'success');
+              renderAdminItemsTab(container);
+            }
+          }
+        ]
+      });
+      setTimeout(() => body.querySelector('#inpEditCatName')?.focus(), 80);
+    }
+
+    function openAddLevelBadgeModal() {
+      const body = el(`
+        <div class="grid" style="gap:14px;">
+          <div class="field">
+            <label style="font-weight:700; font-size:12.5px; color:var(--text);">ช่วงเลเวลใหม่ (Level Range) *</label>
+            <input class="input" id="inpNewLevelRange" placeholder="เช่น Lv. 101 – 150 หรือ Lv. 81+" style="padding:10px 14px; font-size:13.5px; border-radius:12px;" />
+          </div>
+        </div>
+      `);
+      openModal({
+        title: 'เพิ่มช่วงเลเวลใหม่ (+ Add Level Range)',
+        body,
+        width: 440,
+        actions: [
+          { label: 'ยกเลิก', kind: 'ghost' },
+          {
+            label: 'เพิ่มช่วงเลเวล',
+            kind: 'primary',
+            onClick: () => {
+              const newLvl = body.querySelector('#inpNewLevelRange')?.value.trim();
+              if (!newLvl) return toast('กรุณากรอกช่วงเลเวล', 'error');
+              if (!state.store.levels) state.store.levels = [];
+              state.store.levels.push(newLvl);
+              syncStoreSettingsAcrossDevices();
+              toast(`เพิ่มช่วงเลเวล "${newLvl}" เรียบร้อยแล้ว`, 'success');
+              renderAdminItemsTab(container);
+            }
+          }
+        ]
+      });
+      setTimeout(() => body.querySelector('#inpNewLevelRange')?.focus(), 80);
+    }
+
+    // New Category & Create Product Buttons
+    wrap.querySelector('#btnHeaderNewCat')?.addEventListener('click', openNewCategoryModal);
+    wrap.querySelector('#btnHeaderCreateProd')?.addEventListener('click', () => openAddProductModal());
+
+    // Level Badges Listeners
+    wrap.querySelectorAll('.btn-del-lvl').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = +btn.dataset.idx;
+        state.store.levels.splice(idx, 1);
+        syncStoreSettingsAcrossDevices();
+        toast('ลบช่วงเลเวลเรียบร้อย', 'info');
+        renderAdminItemsTab(container);
+      });
+    });
+
+    wrap.querySelector('#btnAddLevelBadge')?.addEventListener('click', openAddLevelBadgeModal);
+
+    // Render Price Rules Boxes
+    const rulesGrid = wrap.querySelector('#priceRulesGrid');
+    const renderPriceRules = () => {
+      if (!rulesGrid) return;
+      rulesGrid.innerHTML = '';
+      const list = state.store.priceRules || [];
+
+      if (list.length === 0) {
+        rulesGrid.innerHTML = `
+          <div style="grid-column:1/-1; padding:24px; text-align:center; background:var(--primary-50); border:1.5px dashed var(--border); border-radius:16px; color:var(--muted);">
+            <div style="font-weight:700; font-size:13.5px; color:var(--text); margin-bottom:4px;">ยังไม่มีกล่องราคาที่กำหนด</div>
+            <div style="font-size:12px;">กดปุ่ม "+ เพิ่มกล่องราคาใหม่" ด้านบนเพื่อเริ่มกำหนดสเต็ปและเรทราคาตามหมวดหมู่และเลเวล</div>
+          </div>
+        `;
+        return;
+      }
+
+      list.forEach((rule, rIdx) => {
+        const card = el(`
+          <div class="price-rule-card">
+            <div class="price-rule-header">
+              <div class="flex items-center gap-2">
+                <span class="price-badge-cat">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                  <span>${escapeHTML(rule.category || 'ทุกหมวดหมู่')}</span>
+                </span>
+                <span class="price-badge-lvl ${rule.isAllLevel ? 'all' : ''}">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                  <span>${rule.isAllLevel ? 'All Level' : `${rule.levelMin || 1} – ${rule.levelMax || 999}`}</span>
+                </span>
+              </div>
+              <div class="flex gap-1">
+                <button type="button" class="btn btn-sm btn-ghost btn-edit-rule" title="แก้ไขกล่องราคา" style="padding:4px 8px; font-size:12px; border-radius:8px;">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </button>
+                <button type="button" class="btn btn-sm btn-ghost btn-del-rule" title="ลบกล่องราคา" style="padding:4px 8px; font-size:12px; color:var(--danger); border-radius:8px;">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="price-step-row">
+              <div class="flex items-center gap-2" style="font-size:12.5px; font-weight:700; color:var(--text);">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <span>กดคลิกเพิ่มทีละ:</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <input type="number" class="input input-sm inp-rule-step" value="${rule.step || 10}" min="1" max="1000" style="width:65px; text-align:center; font-weight:800; padding:4px 6px; font-size:13px; border-radius:8px;" />
+                <span style="font-size:11.5px; font-weight:700; color:var(--muted);">ชิ้น / คลิก</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center" style="justify-content:space-between; margin-bottom:8px;">
+                <span style="font-weight:800; font-size:12.5px; color:var(--text);">รายการราคา (${(rule.tiers || []).length})</span>
+                <button type="button" class="btn btn-sm btn-ghost btn-add-tier" style="font-size:11.5px; font-weight:800; padding:3px 8px; border:1px solid var(--border); border-radius:8px;">
+                  + เพิ่มราคา
+                </button>
+              </div>
+
+              <div class="price-tiers-list">
+                ${(rule.tiers && rule.tiers.length > 0) ? rule.tiers.map((t, tIdx) => {
+                  const unitPrice = t.qty > 0 ? (t.price / t.qty) : 0;
+                  return `
+                    <div class="price-tier-item">
+                      <div style="font-size:13px; font-weight:700; color:var(--text);">
+                        <strong>${t.qty} ชิ้น</strong> → <span style="font-weight:900; color:var(--accent-text); font-size:14.5px;">${money(t.price)}</span>
+                        <span style="font-size:11px; color:var(--muted); font-weight:600; margin-left:4px;">(${money(unitPrice)}/ชิ้น)</span>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-ghost btn-del-tier" data-tidx="${tIdx}" style="padding:2px 6px; color:var(--danger); font-size:13px; font-weight:800;" title="ลบรายการราคานี้">
+                        ✕
+                      </button>
+                    </div>
+                  `;
+                }).join('') : `
+                  <div style="padding:12px; text-align:center; font-size:11.5px; color:var(--muted); background:var(--primary-50); border-radius:10px;">ยังไม่มีรายการราคาในกล่องนี้</div>
+                `}
+              </div>
+            </div>
+          </div>
+        `);
+
+        // Edit Step Input
+        const stepInp = card.querySelector('.inp-rule-step');
+        stepInp?.addEventListener('change', () => {
+          rule.step = Number(stepInp.value) || 10;
+          syncStoreSettingsAcrossDevices();
+          toast(`อัปเดตสเต็ปคลิก ${rule.category} เป็น ${rule.step} ชิ้น/คลิก แล้ว`, 'success');
+        });
+
+        // Edit Rule
+        card.querySelector('.btn-edit-rule')?.addEventListener('click', () => openAddPriceRuleModal(rule));
+
+        // Delete Rule
+        card.querySelector('.btn-del-rule')?.addEventListener('click', () => {
+          if (confirm(`คุณต้องการลบกล่องราคา "${rule.category}" ใช่หรือไม่?`)) {
+            state.store.priceRules.splice(rIdx, 1);
+            syncStoreSettingsAcrossDevices();
+            toast('ลบกล่องราคาเรียบร้อยแล้ว', 'info');
+            renderPriceRules();
+          }
+        });
+
+        // Add Tier
+        card.querySelector('.btn-add-tier')?.addEventListener('click', () => openAddPriceTierModal(rule));
+
+        // Delete Tier
+        card.querySelectorAll('.btn-del-tier').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const tIdx = +btn.dataset.tidx;
+            rule.tiers.splice(tIdx, 1);
+            syncStoreSettingsAcrossDevices();
+            toast('ลบรายการราคาเรียบร้อย', 'info');
+            renderPriceRules();
+          });
+        });
+
+        rulesGrid.appendChild(card);
+      });
+    };
+
+    renderPriceRules();
+
+    wrap.querySelector('#btnAddPriceRuleBox')?.addEventListener('click', () => openAddPriceRuleModal());
+    wrap.querySelector('#btnAddItemProduct')?.addEventListener('click', () => openAddProductModal());
+
+    const grid = wrap.querySelector('#adminItemGrid');
+    const pager = wrap.querySelector('#adminItemPager');
+    const countEl = wrap.querySelector('#adminItemCount');
+    const searchInp = wrap.querySelector('#adminItemSearch');
+    const btnReset = wrap.querySelector('#btnAdminResetFilters');
     const PAGE_SIZE = 160;
     let currentPage = 1;
+    let selectedCats = [];
+    let selectedLvls = [];
 
-    function draw() {
-      const q = filter.querySelector('#prodSearch').value.toLowerCase();
-      const cat = filter.querySelector('#prodCat').value;
-      const list = PRODUCTS.filter(p => (!q || p.name.toLowerCase().includes(q)) && (!cat || p.cat === cat));
+    // Initialize Custom Multi-Dropdowns
+    const catOptions = CATEGORIES.map(c => ({ value: c.name, label: c.name }));
+    const catDropdown = createMultiDropdown({
+      buttonLabel: 'All categories',
+      entityName: 'หมวดหมู่',
+      options: catOptions,
+      selectedValues: selectedCats,
+      onSelect: (vals) => {
+        selectedCats = vals;
+        currentPage = 1;
+        drawGrid();
+      }
+    });
+    wrap.querySelector('#adminCatDropdownSlot')?.appendChild(catDropdown.element);
+
+    const levelOptions = [
+      { value: '1-20', label: 'Lv. 1 - 20' },
+      { value: '21-40', label: 'Lv. 21 - 40' },
+      { value: '41-60', label: 'Lv. 41 - 60' },
+      { value: '61-80', label: 'Lv. 61 - 80' },
+      { value: '81-100+', label: 'Lv. 81 - 100+' }
+    ];
+    const levelDropdown = createMultiDropdown({
+      buttonLabel: 'All Levels',
+      entityName: 'เลเวล',
+      options: levelOptions,
+      selectedValues: selectedLvls,
+      onSelect: (vals) => {
+        selectedLvls = vals;
+        currentPage = 1;
+        drawGrid();
+      }
+    });
+    wrap.querySelector('#adminLevelDropdownSlot')?.appendChild(levelDropdown.element);
+
+    btnReset.addEventListener('click', () => {
+      searchInp.value = '';
+      selectedCats = [];
+      selectedLvls = [];
+      catDropdown.setValues([]);
+      levelDropdown.setValues([]);
+      currentPage = 1;
+      drawGrid();
+      toast('ล้างค่าตัวกรองเรียบร้อยแล้ว', 'info');
+    });
+
+    function drawGrid() {
+      const q = searchInp.value.toLowerCase().trim();
+
+      const list = PRODUCTS.filter(p => {
+        if (q && !p.name.toLowerCase().includes(q) && !(p.cat || '').toLowerCase().includes(q)) return false;
+        if (selectedCats.length > 0 && !selectedCats.includes(p.cat)) return false;
+        if (selectedLvls.length > 0) {
+          const pLevel = Number(p.level) || 1;
+          const match = selectedLvls.some(lvl => {
+            if (lvl === '1-20') return pLevel >= 1 && pLevel <= 20;
+            if (lvl === '21-40') return pLevel >= 21 && pLevel <= 40;
+            if (lvl === '41-60') return pLevel >= 41 && pLevel <= 60;
+            if (lvl === '61-80') return pLevel >= 61 && pLevel <= 80;
+            if (lvl === '81-100+' || lvl === '81+') return pLevel >= 81;
+            return false;
+          });
+          if (!match) return false;
+        }
+        return true;
+      });
+
       const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
       if (currentPage > totalPages) currentPage = totalPages;
       const start = (currentPage - 1) * PAGE_SIZE;
       const pageItems = list.slice(start, start + PAGE_SIZE);
 
-      meta.querySelector('#prodCount').textContent = list.length
+      countEl.textContent = list.length
         ? `Showing ${start + 1}–${Math.min(list.length, start + PAGE_SIZE)} of ${list.length} products`
         : 'No products';
       grid.innerHTML = '';
 
+      const ratio = Number(state.store?.priceRatio) || 1.0;
+
       pageItems.forEach(p => {
         const stockCls = p.stock === 0 ? 'out' : p.stock < 10 ? 'low' : '';
         const qty = state.selected[p.id] || 0;
-        const imgUrl = p.image || DEFAULT_PRODUCT_IMG;
-        const mediaHtml = `<img src="${escapeHTML(imgUrl)}" alt="${escapeHTML(p.name)}" onerror="this.src='${DEFAULT_PRODUCT_IMG}';" />`;
+        const step = getProductClickStep(p);
+        const mediaHtml = renderMediaHtml(p.image, p.name);
         const tile = el(`
-          <div class="product-tile ${stockCls} ${qty ? 'selected' : ''}" data-id="${p.id}" title="${escapeHTML(p.name)} · ${money(p.price)}">
+          <div class="product-tile ${stockCls} ${qty ? 'selected' : ''}" data-id="${p.id}" title="${escapeHTML(p.name)} · ${money(effectivePrice)} (Lv.${p.level || 1}, สเต็ปคลิกละ ${step} ชิ้น)">
             ${mediaHtml}
             <span class="stock-dot"></span>
             <span class="qty-badge">${qty}</span>
@@ -3488,7 +4578,8 @@
         `);
         tile.addEventListener('click', () => {
           if (p.stock === 0) return toast(`${p.name} is out of stock`, 'error');
-          state.selected[p.id] = (state.selected[p.id] || 0) + 1;
+          const clickStep = getProductClickStep(p);
+          state.selected[p.id] = (state.selected[p.id] || 0) + clickStep;
           tile.classList.add('selected');
           const badge = tile.querySelector('.qty-badge');
           badge.textContent = state.selected[p.id];
@@ -3497,7 +4588,8 @@
         tile.addEventListener('contextmenu', (e) => {
           e.preventDefault();
           if (!state.selected[p.id]) return openProductQuickModal(p);
-          state.selected[p.id] -= 1;
+          const clickStep = getProductClickStep(p);
+          state.selected[p.id] -= clickStep;
           if (state.selected[p.id] <= 0) {
             delete state.selected[p.id];
             tile.classList.remove('selected');
@@ -3514,7 +4606,7 @@
       if (totalPages > 1) {
         const mkBtn = (label, page, opts = {}) => {
           const b = el(`<button class="pg ${opts.active ? 'active' : ''}" ${opts.disabled ? 'disabled style="opacity:.4;cursor:not-allowed"' : ''}>${label}</button>`);
-          if (!opts.disabled) b.addEventListener('click', () => { currentPage = page; draw(); window.scrollTo({top:0, behavior:'smooth'}); });
+          if (!opts.disabled) b.addEventListener('click', () => { currentPage = page; drawGrid(); });
           return b;
         };
         pager.appendChild(mkBtn('‹', currentPage - 1, { disabled: currentPage === 1 }));
@@ -3523,17 +4615,827 @@
       }
     }
 
-    filter.querySelector('#prodSearch').addEventListener('input', () => { currentPage = 1; draw(); });
-    filter.querySelector('#prodCat').addEventListener('change', () => { currentPage = 1; draw(); });
-    draw();
-  };
+    searchInp.addEventListener('input', () => { currentPage = 1; drawGrid(); });
+    drawGrid();
+  }
+
+  // Modals for Setting Price
+  function openAddPriceRuleModal(ruleToEdit = null) {
+    const isEdit = !!ruleToEdit;
+    const rule = ruleToEdit || {
+      id: 'pr_' + Date.now(),
+      category: CATEGORIES[0]?.name || 'อาหารสัตว์',
+      levelMin: 1,
+      levelMax: 75,
+      isAllLevel: false,
+      step: 10,
+      tiers: [
+        { id: 'pt_1', qty: 10, price: 2.00 },
+        { id: 'pt_2', qty: 50, price: 8.00 },
+        { id: 'pt_3', qty: 100, price: 15.00 }
+      ]
+    };
+
+    const { modal, body } = openModal({
+      title: isEdit ? 'แก้ไขกล่องราคา (Edit Price Rule Box)' : 'เพิ่มกล่องราคาใหม่ (+ Add Price Rule Box)',
+      width: 480
+    });
+
+    body.appendChild(el(`
+      <form id="formPriceRule" style="display:flex; flex-direction:column; gap:14px;">
+        <div class="field">
+          <label style="font-weight:700;">หมวดหมู่สินค้า (Category)</label>
+          <select class="select" id="prCategory" required>
+            <option value="All" ${rule.category === 'All' ? 'selected' : ''}>ทุกหมวดหมู่ (All Categories)</option>
+            ${CATEGORIES.map(c => `<option value="${escapeHTML(c.name)}" ${rule.category === c.name ? 'selected' : ''}>${escapeHTML(c.name)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="field">
+          <label style="font-weight:700;">รูปแบบการกรองเลเวล (Level Range)</label>
+          <div class="flex gap-2" style="margin-bottom:8px;">
+            <button type="button" class="btn btn-sm ${!rule.isAllLevel ? 'btn-primary' : ''}" id="btnPrTypeRange" style="font-size:12px;">ระบุช่วงเลเวล (Min - Max)</button>
+            <button type="button" class="btn btn-sm ${rule.isAllLevel ? 'btn-primary' : ''}" id="btnPrTypeAll" style="font-size:12px;">ทุกเลเวล (All Level)</button>
+          </div>
+          <div class="grid" id="prRangeWrap" style="grid-template-columns:1fr 1fr; gap:10px; display:${rule.isAllLevel ? 'none' : 'grid'};">
+            <div>
+              <label style="font-size:11px;">เลเวลเริ่มต้น (Min Lv.)</label>
+              <input type="number" class="input" id="prMinLvl" value="${rule.levelMin || 1}" min="1" max="999" />
+            </div>
+            <div>
+              <label style="font-size:11px;">เลเวลสูงสุด (Max Lv.)</label>
+              <input type="number" class="input" id="prMaxLvl" value="${rule.levelMax || 75}" min="1" max="999" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label style="font-weight:700;">จำนวนคลิกเพิ่มทีละ (Items per click step)</label>
+          <input type="number" class="input" id="prStep" value="${rule.step || 10}" min="1" max="1000" placeholder="เช่น 10" required />
+          <div style="font-size:11px; color:var(--muted); margin-top:3px;">จำนวนชิ้นที่ระบบจะเพิ่มลงตะกร้าเมื่อคลิกสินค้าในหมวด/เลเวลนี้</div>
+        </div>
+
+        <div class="flex gap-2" style="justify-content:flex-end; margin-top:10px;">
+          <button type="button" class="btn" id="btnCancelPr">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary" style="font-weight:800;">${isEdit ? 'บันทึกการแก้ไข' : 'บันทึกกล่องราคา'}</button>
+        </div>
+      </form>
+    `));
+
+    let isAllLvl = !!rule.isAllLevel;
+    const btnTypeRange = body.querySelector('#btnPrTypeRange');
+    const btnTypeAll = body.querySelector('#btnPrTypeAll');
+    const rangeWrap = body.querySelector('#prRangeWrap');
+
+    btnTypeRange?.addEventListener('click', () => {
+      isAllLvl = false;
+      btnTypeRange.classList.add('btn-primary');
+      btnTypeAll.classList.remove('btn-primary');
+      rangeWrap.style.display = 'grid';
+    });
+
+    btnTypeAll?.addEventListener('click', () => {
+      isAllLvl = true;
+      btnTypeAll.classList.add('btn-primary');
+      btnTypeRange.classList.remove('btn-primary');
+      rangeWrap.style.display = 'none';
+    });
+
+    body.querySelector('#btnCancelPr')?.addEventListener('click', () => closeModal());
+
+    body.querySelector('#formPriceRule')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const cat = body.querySelector('#prCategory').value;
+      const step = Number(body.querySelector('#prStep').value) || 10;
+      const minLvl = isAllLvl ? 1 : (Number(body.querySelector('#prMinLvl').value) || 1);
+      const maxLvl = isAllLvl ? 999 : (Number(body.querySelector('#prMaxLvl').value) || 999);
+
+      if (!state.store.priceRules) state.store.priceRules = [];
+
+      if (isEdit) {
+        const target = state.store.priceRules.find(r => r.id === rule.id);
+        if (target) {
+          target.category = cat;
+          target.step = step;
+          target.isAllLevel = isAllLvl;
+          target.levelMin = minLvl;
+          target.levelMax = maxLvl;
+        }
+      } else {
+        state.store.priceRules.push({
+          id: 'pr_' + Date.now(),
+          category: cat,
+          step: step,
+          isAllLevel: isAllLvl,
+          levelMin: minLvl,
+          levelMax: maxLvl,
+          tiers: [
+            { id: 'pt_1', qty: step, price: 2.00 },
+            { id: 'pt_2', qty: step * 5, price: 8.00 },
+            { id: 'pt_3', qty: step * 10, price: 15.00 }
+          ]
+        });
+      }
+
+      syncStoreSettingsAcrossDevices();
+      closeModal();
+      toast(isEdit ? 'แก้ไขกล่องราคาเรียบร้อย' : 'เพิ่มกล่องราคาใหม่เรียบร้อยแล้ว', 'success');
+      const content = document.getElementById('adminProductTabContent');
+      if (content && state.adminProductTab === 'items') renderAdminItemsTab(content);
+    });
+  }
+
+  function openAddPriceTierModal(rule) {
+    const { modal, body } = openModal({
+      title: `เพิ่มรายการราคา (${rule.category} ${rule.isAllLevel ? 'All Level' : 'Lv.' + rule.levelMin + '-' + rule.levelMax})`,
+      width: 400
+    });
+
+    body.appendChild(el(`
+      <form id="formAddPriceTier" style="display:flex; flex-direction:column; gap:14px;">
+        <div class="field">
+          <label style="font-weight:700;">จำนวนชิ้น (Quantity)</label>
+          <input type="number" class="input" id="tierQty" placeholder="เช่น 10, 50, 100" min="1" step="1" required />
+        </div>
+
+        <div class="field">
+          <label style="font-weight:700;">ราคารวมทั้งแพ็กเกจ (บาท)</label>
+          <input type="number" class="input" id="tierPrice" placeholder="เช่น 2.00, 8.00, 15.00" min="0.01" step="0.01" required />
+        </div>
+
+        <div id="tierAvgPreview" style="background:var(--primary-50); padding:10px 14px; border-radius:10px; border:1px solid var(--border); font-size:12.5px; font-weight:700; color:var(--accent-text); text-align:center;">
+          เฉลี่ย: ฿0.00 / ชิ้น
+        </div>
+
+        <div class="flex gap-2" style="justify-content:flex-end; margin-top:8px;">
+          <button type="button" class="btn" id="btnCancelTier">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary" style="font-weight:800;">+ เพิ่มราคา</button>
+        </div>
+      </form>
+    `));
+
+    const qtyInp = body.querySelector('#tierQty');
+    const priceInp = body.querySelector('#tierPrice');
+    const prevEl = body.querySelector('#tierAvgPreview');
+
+    const updateAvg = () => {
+      const q = Number(qtyInp.value) || 0;
+      const p = Number(priceInp.value) || 0;
+      if (q > 0 && p > 0) {
+        prevEl.textContent = `เฉลี่ย: ${money(p / q)} / ชิ้น`;
+      } else {
+        prevEl.textContent = `เฉลี่ย: ฿0.00 / ชิ้น`;
+      }
+    };
+
+    qtyInp.addEventListener('input', updateAvg);
+    priceInp.addEventListener('input', updateAvg);
+
+    body.querySelector('#btnCancelTier')?.addEventListener('click', () => closeModal());
+
+    body.querySelector('#formAddPriceTier')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = Number(qtyInp.value) || 0;
+      const p = Number(priceInp.value) || 0;
+      if (q <= 0 || p <= 0) return toast('กรุณากรอกจำนวนและราคาให้ถูกต้อง', 'error');
+
+      if (!rule.tiers) rule.tiers = [];
+      rule.tiers.push({
+        id: 'pt_' + Date.now(),
+        qty: q,
+        price: p
+      });
+      rule.tiers.sort((a, b) => a.qty - b.qty);
+
+      syncStoreSettingsAcrossDevices();
+      closeModal();
+      toast(`เพิ่มราคา ${q} ชิ้น ${money(p)} สำเร็จ`, 'success');
+      const content = document.getElementById('adminProductTabContent');
+      if (content && state.adminProductTab === 'items') renderAdminItemsTab(content);
+    });
+  }
+
+  // --- TAB 2: วนเหรียญ (Coin Farming Management) ---
+  function renderAdminCoinFarmTab(container) {
+    const boxes = state.store.coinFarmBoxes || [];
+    const wrap = el(`
+      <div>
+        <!-- Module Toggle Row -->
+        <div class="module-switch-row">
+          <div>
+            <strong style="font-size:13.5px; color:var(--text);">เปิดให้บริการวนเหรียญในหน้าร้าน (Enable Coin Farming Service)</strong>
+            <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">เมื่อเปิด จะแสดงหมวดบริการวนเหรียญและกล่องเลเวลในหน้าร้านและหน้าแรก</div>
+          </div>
+          <label class="clean-switch">
+            <input type="checkbox" id="swEnableCoinFarm" ${state.store.enableCoinFarm !== false ? 'checked' : ''} />
+            <span class="clean-slider"></span>
+          </label>
+        </div>
+
+        <div class="card">
+          <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+            <div>
+              <div class="card-title">กล่องเลเวลและเรทราคาเหรียญ (Level Boxes &amp; Coin Tiers)</div>
+              <div class="card-sub">เพิ่มกล่องช่วงเลเวล และกำหนดเรทจำนวนเหรียญ/ราคาได้อย่างอิสระ</div>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnAddLevelBox">+ Add Level Box (เพิ่มกล่องเลเวล)</button>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:16px;" id="adminLevelBoxesList"></div>
+        </div>
+      </div>
+    `);
+    container.appendChild(wrap);
+
+    wrap.querySelector('#swEnableCoinFarm')?.addEventListener('change', (e) => {
+      state.store.enableCoinFarm = e.target.checked;
+      syncStoreSettingsAcrossDevices();
+      toast(state.store.enableCoinFarm ? 'เปิดให้บริการวนเหรียญในหน้าร้านแล้ว' : 'ปิดบริการวนเหรียญในหน้าร้านแล้ว', 'info');
+    });
+
+    wrap.querySelector('#btnAddLevelBox')?.addEventListener('click', () => openCoinFarmBoxModal());
+
+    const listEl = wrap.querySelector('#adminLevelBoxesList');
+    if (boxes.length === 0) {
+      listEl.innerHTML = `<div class="empty">ยังไม่มีกล่องช่วงเลเวล กดปุ่ม "+ Add Level Box" ด้านบนเพื่อสร้างกล่องแรก</div>`;
+      return;
+    }
+
+    boxes.forEach((b, bIdx) => {
+      const boxCard = el(`
+        <div class="coin-farm-box">
+          <div class="coin-farm-box-head">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-weight:800; font-size:16px; color:var(--accent-text);">${escapeHTML(b.title)}</span>
+                <span class="badge" style="background:var(--primary-50); font-weight:700; font-size:11px;">${(b.tiers || []).length} แพ็กเกจ</span>
+              </div>
+              <div style="font-size:12px; color:var(--muted); margin-top:2px;">${escapeHTML(b.sub || '')}</div>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" class="btn btn-sm btn-ghost btn-edit-box" data-bidx="${bIdx}">Edit Box</button>
+              <button type="button" class="btn btn-sm btn-primary btn-add-tier" data-bidx="${bIdx}">+ Add Tier (เพิ่มเรทเหรียญ)</button>
+              <button type="button" class="btn btn-sm btn-danger btn-del-box" data-bidx="${bIdx}">✕ Delete</button>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            ${(b.tiers || []).map((t, tIdx) => `
+              <div class="coin-tier-item">
+                <div style="display:flex; align-items:center; gap:12px; flex:1;">
+                  <div style="width:32px; height:32px; border-radius:8px; background:var(--primary-100); color:var(--accent-text); display:grid; place-items:center; font-weight:800; font-size:12px;">
+                    #${tIdx + 1}
+                  </div>
+                  <div>
+                    <strong style="font-size:14px; color:var(--text);">${escapeHTML(t.coins)}</strong>
+                    <div style="font-size:11.5px; color:var(--muted);">${escapeHTML(t.desc || '')}</div>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-weight:800; font-size:15px; color:var(--accent-text);">${money(t.price)}</span>
+                  <button type="button" class="btn btn-sm btn-edit-tier" data-bidx="${bIdx}" data-tidx="${tIdx}" style="padding:4px 8px; font-size:11px;">Edit</button>
+                  <button type="button" class="btn btn-sm btn-ghost btn-del-tier" data-bidx="${bIdx}" data-tidx="${tIdx}" style="color:var(--danger); padding:4px 8px; font-size:11px;">✕</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `);
+
+      boxCard.querySelector('.btn-edit-box')?.addEventListener('click', () => openCoinFarmBoxModal(b));
+      boxCard.querySelector('.btn-del-box')?.addEventListener('click', () => {
+        confirmDialog(`ลบกล่องเลเวล "${b.title}" และเรททั้งหมดในกล่องนี้?`, () => {
+          state.store.coinFarmBoxes.splice(bIdx, 1);
+          syncStoreSettingsAcrossDevices();
+          toast(`ลบกล่อง "${b.title}" แล้ว`, 'success');
+          renderAdminCoinFarmTab(container);
+        });
+      });
+      boxCard.querySelector('.btn-add-tier')?.addEventListener('click', () => openCoinTierModal(b));
+
+      boxCard.querySelectorAll('.btn-edit-tier').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const t = b.tiers[+btn.dataset.tidx];
+          if (t) openCoinTierModal(b, t);
+        });
+      });
+
+      boxCard.querySelectorAll('.btn-del-tier').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tIdx = +btn.dataset.tidx;
+          b.tiers.splice(tIdx, 1);
+          syncStoreSettingsAcrossDevices();
+          toast('ลบเรทเหรียญเรียบร้อย', 'info');
+          renderAdminCoinFarmTab(container);
+        });
+      });
+
+      listEl.appendChild(boxCard);
+    });
+  }
+
+  // --- TAB 3: ID Game Management ---
+  function renderAdminGameIdsTab(container) {
+    const accs = state.store.gameAccounts || [];
+    const wrap = el(`
+      <div>
+        <!-- Module Toggle Row -->
+        <div class="module-switch-row">
+          <div>
+            <strong style="font-size:13.5px; color:var(--text);">เปิดตลาดซื้อขายไอดีเกมในหน้าร้าน (Enable Game Accounts ID Market)</strong>
+            <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">เมื่อเปิด จะแสดงการ์ดไอดีเกมพร้อมรูปภาพ 1:1 และปุ่มสั่งซื้อในหน้าร้านและหน้าแรก</div>
+          </div>
+          <label class="clean-switch">
+            <input type="checkbox" id="swEnableGameIds" ${state.store.enableGameIds !== false ? 'checked' : ''} />
+            <span class="clean-slider"></span>
+          </label>
+        </div>
+
+        <div class="card">
+          <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+            <div>
+              <div class="card-title">รายการไอดีเกม (${accs.length} รายการ)</div>
+              <div class="card-sub">เพิ่มไอดีเกม อัปโหลดรูปภาพ 1:1 ได้หลายภาพอย่างอิสระ กำหนดราคา และสถานะ</div>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnAddGameId">+ Add Game ID (เพิ่มไอดีเกมใหม่)</button>
+          </div>
+
+          <div class="game-id-grid" id="adminGameIdsGrid"></div>
+        </div>
+      </div>
+    `);
+    container.appendChild(wrap);
+
+    wrap.querySelector('#swEnableGameIds')?.addEventListener('change', (e) => {
+      state.store.enableGameIds = e.target.checked;
+      syncStoreSettingsAcrossDevices();
+      toast(state.store.enableGameIds ? 'เปิดตลาดไอดีเกมในหน้าร้านแล้ว' : 'ปิดตลาดไอดีเกมในหน้าร้านแล้ว', 'info');
+    });
+
+    wrap.querySelector('#btnAddGameId')?.addEventListener('click', () => openGameAccountModal());
+
+    const gridEl = wrap.querySelector('#adminGameIdsGrid');
+    if (accs.length === 0) {
+      gridEl.innerHTML = `<div class="empty" style="grid-column: 1 / -1;">ยังไม่มีรายการไอดีเกม กดปุ่ม "+ Add Game ID" ด้านบนเพื่อเพิ่มไอดีแรก</div>`;
+      return;
+    }
+
+    accs.forEach((acc, idx) => {
+      const images = (acc.images && acc.images.length > 0) ? acc.images.filter(Boolean) : [];
+      let currentSlide = 0;
+
+      const card = el(`
+        <div class="game-id-card">
+          <span class="game-id-badge ${acc.status || 'available'}">
+            ${acc.status === 'sold' ? 'ขายแล้ว (Sold)' : acc.status === 'reserved' ? 'ติดจอง (Reserved)' : 'พร้อมขาย (Available)'}
+          </span>
+
+          <div class="game-id-gallery-wrap">
+            <div class="game-id-gallery-track" id="track_${acc.id}">
+              ${images.length > 0 ? images.map((img, i) => `
+                <div class="game-id-gallery-slide">
+                  ${renderMediaHtml(img, `${acc.title} Photo ${i+1}`)}
+                </div>
+              `).join('') : `
+                <div class="game-id-gallery-slide">
+                  ${renderMediaHtml('', acc.title)}
+                </div>
+              `}
+            </div>
+
+            ${images.length > 1 ? `
+              <button type="button" class="game-id-gallery-btn prev btn-g-prev" aria-label="Previous">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+              <button type="button" class="game-id-gallery-btn next btn-g-next" aria-label="Next">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+              <div class="game-id-dots">
+                ${images.map((_, i) => `<div class="game-id-dot ${i === 0 ? 'active' : ''}" data-idx="${i}"></div>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+
+          <div style="flex:1; display:flex; flex-direction:column;">
+            <div class="flex items-center gap-2" style="margin-bottom:4px;">
+              <span class="badge" style="background:var(--primary-100); color:var(--accent-text); font-weight:800; font-size:11px;">${escapeHTML(acc.code)}</span>
+              <span style="font-size:11px; color:var(--muted); margin-left:auto;">${images.length} รูป</span>
+            </div>
+
+            <div style="font-weight:800; font-size:14px; color:var(--text); line-height:1.3; margin-bottom:4px;">${escapeHTML(acc.title)}</div>
+            ${acc.details ? `<div style="font-size:11.5px; color:var(--muted); margin-bottom:8px; line-height:1.4; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${escapeHTML(acc.details)}</div>` : ''}
+
+            <div style="margin-top:auto; padding-top:10px; border-top:1.5px dashed var(--border); display:flex; align-items:center; justify-content:space-between; gap:6px;">
+              <div style="font-weight:900; font-size:16px; color:var(--accent-text);">${money(acc.price)}</div>
+              <div class="flex gap-1">
+                <button type="button" class="btn btn-sm btn-edit-acc" style="font-size:11px; padding:4px 8px; font-weight:700;">Edit</button>
+                <button type="button" class="btn btn-sm btn-danger btn-del-acc" style="font-size:11px; padding:4px 6px;">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+
+      // Slider logic
+      if (images.length > 1) {
+        const track = card.querySelector(`#track_${acc.id}`);
+        const dots = card.querySelectorAll('.game-id-dot');
+        const updateSlide = (i) => {
+          currentSlide = (i + images.length) % images.length;
+          if (track) track.style.transform = `translateX(-${currentSlide * 100}%)`;
+          dots.forEach((d, dIdx) => d.classList.toggle('active', dIdx === currentSlide));
+        };
+        card.querySelector('.btn-g-prev')?.addEventListener('click', (e) => { e.stopPropagation(); updateSlide(currentSlide - 1); });
+        card.querySelector('.btn-g-next')?.addEventListener('click', (e) => { e.stopPropagation(); updateSlide(currentSlide + 1); });
+        dots.forEach(d => d.addEventListener('click', (e) => { e.stopPropagation(); updateSlide(+d.dataset.idx); }));
+      }
+
+      card.querySelector('.btn-edit-acc')?.addEventListener('click', () => openGameAccountModal(acc));
+      card.querySelector('.btn-del-acc')?.addEventListener('click', () => {
+        confirmDialog(`ลบไอดีเกม "${acc.code}" (${acc.title})?`, () => {
+          state.store.gameAccounts.splice(idx, 1);
+          syncStoreSettingsAcrossDevices();
+          toast(`ลบไอดี "${acc.code}" แล้ว`, 'success');
+          renderAdminGameIdsTab(container);
+        });
+      });
+
+      gridEl.appendChild(card);
+    });
+  }
+
+  // Helper Modals
+  function openCoinFarmBoxModal(existingBox = null) {
+    const isEdit = !!existingBox;
+    const body = el(`
+      <div class="grid" style="gap:14px;">
+        <div class="field">
+          <label style="font-weight:700;">ชื่อช่วงเลเวล (Level Range Title) *</label>
+          <input class="input" id="cfBoxTitle" placeholder="เช่น Level 1 - 30, Level 31 - 60" value="${existingBox ? escapeHTML(existingBox.title) : ''}" style="font-weight:700;" />
+        </div>
+        <div class="field">
+          <label style="font-weight:700;">คำอธิบายสั้น (Subtitle / Description)</label>
+          <input class="input" id="cfBoxSub" placeholder="เช่น สำหรับฟาร์มเลเวลเริ่มต้น, ฟาร์มไวได้เหรียญเร็ว" value="${existingBox ? escapeHTML(existingBox.sub) : ''}" />
+        </div>
+      </div>
+    `);
+
+    openModal({
+      title: isEdit ? 'แก้ไขกล่องเลเวลวนเหรียญ (Edit Level Box)' : 'เพิ่มกล่องเลเวลวนเหรียญใหม่ (Add Level Box)',
+      body,
+      actions: [
+        { label: 'Cancel', kind: 'ghost' },
+        {
+          label: isEdit ? 'บันทึกการเปลี่ยนแปลง' : 'เพิ่มกล่องเลเวล',
+          kind: 'primary',
+          onClick: () => {
+            const title = $('#cfBoxTitle')?.value.trim() || 'New Level Box';
+            const sub = $('#cfBoxSub')?.value.trim() || '';
+            state.store.coinFarmBoxes = state.store.coinFarmBoxes || [];
+            if (isEdit) {
+              existingBox.title = title;
+              existingBox.sub = sub;
+              toast(`อัปเดตกล่องเลเวล "${title}" แล้ว`, 'success');
+            } else {
+              const newBox = {
+                id: 'cf_box_' + Date.now(),
+                title,
+                sub,
+                tiers: [
+                  { id: 't_' + Date.now() + '_1', coins: '10,000 เหรียญ', price: 25, desc: 'ใช้เวลาประมาณ 10-15 นาที' }
+                ]
+              };
+              state.store.coinFarmBoxes.push(newBox);
+              toast(`เพิ่มกล่องเลเวล "${title}" สำเร็จ`, 'success');
+            }
+            syncStoreSettingsAcrossDevices();
+            renderPage();
+          }
+        }
+      ]
+    });
+  }
+
+  function openCoinTierModal(box, existingTier = null) {
+    const isEdit = !!existingTier;
+    const body = el(`
+      <div class="grid" style="gap:14px;">
+        <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="field">
+            <label style="font-weight:700;">จำนวนเหรียญ (Coins Amount) *</label>
+            <input class="input" id="cfTierCoins" placeholder="เช่น 10,000 เหรียญ, 1 แสน" value="${existingTier ? escapeHTML(existingTier.coins) : ''}" style="font-weight:700;" />
+          </div>
+          <div class="field">
+            <label style="font-weight:700;">ราคา (${getCurrencySymbol()}) *</label>
+            <input type="number" step="0.5" class="input" id="cfTierPrice" placeholder="เช่น 25, 45, 120" value="${existingTier ? existingTier.price : 25}" style="font-weight:700;" />
+          </div>
+        </div>
+        <div class="field">
+          <label style="font-weight:700;">ระยะเวลา / หมายเหตุ (Est. Time / Note)</label>
+          <input class="input" id="cfTierDesc" placeholder="เช่น ใช้เวลาประมาณ 10-15 นาที" value="${existingTier ? escapeHTML(existingTier.desc) : ''}" />
+        </div>
+      </div>
+    `);
+
+    openModal({
+      title: isEdit ? `แก้ไขเรทราคาเหรียญ (${box.title})` : `เพิ่มเรทราคาเหรียญใหม่ (${box.title})`,
+      body,
+      actions: [
+        { label: 'Cancel', kind: 'ghost' },
+        {
+          label: isEdit ? 'บันทึก' : 'เพิ่มเรทเหรียญ',
+          kind: 'primary',
+          onClick: () => {
+            const coins = $('#cfTierCoins')?.value.trim() || '10,000 เหรียญ';
+            const price = Number($('#cfTierPrice')?.value || 25);
+            const desc = $('#cfTierDesc')?.value.trim() || '';
+            box.tiers = box.tiers || [];
+            if (isEdit) {
+              existingTier.coins = coins;
+              existingTier.price = price;
+              existingTier.desc = desc;
+              toast(`อัปเดตเรท "${coins}" (${money(price)}) แล้ว`, 'success');
+            } else {
+              box.tiers.push({
+                id: 't_' + Date.now(),
+                coins,
+                price,
+                desc
+              });
+              toast(`เพิ่มเรท "${coins}" (${money(price)}) สำเร็จ`, 'success');
+            }
+            syncStoreSettingsAcrossDevices();
+            renderPage();
+          }
+        }
+      ]
+    });
+  }
+
+  function openGameAccountModal(existingAcc = null) {
+    const isEdit = !!existingAcc;
+    let imagesList = existingAcc?.images ? [...existingAcc.images] : [];
+
+    const body = el(`
+      <div class="grid" style="gap:14px;">
+        <!-- Multi-image 1:1 Uploader Box (No Emojis) -->
+        <div style="background:var(--primary-50); border:1.5px solid var(--border); border-radius:16px; padding:16px;">
+          <div class="flex items-center" style="justify-content:space-between; margin-bottom:6px;">
+            <div style="font-weight:800; font-size:13.5px; color:var(--text);">รูปภาพไอดีเกม ขนาด 1:1 (Game ID Photos) *</div>
+            <span class="badge" id="photoCountBadge" style="background:var(--card); font-size:11px; font-weight:700;">${imagesList.length} รูป</span>
+          </div>
+          <div style="font-size:11.5px; color:var(--muted); margin-bottom:10px;">สามารถเพิ่มรูปภาพขนาด 1:1 ได้หลายรูปอย่างอิสระ มีปุ่มเลื่อนสไลด์ดูรูปในหน้าร้าน</div>
+
+          <div class="admin-photo-uploader-grid" id="adminPhotoGrid"></div>
+
+          <input type="file" id="fileMultiPhotoUpload" accept="image/*" style="display:none;" />
+          <div class="flex gap-2" style="margin-top:12px;">
+            <button type="button" class="btn btn-sm btn-primary" id="btnTriggerMultiUpload" style="font-size:12px; padding:6px 14px; font-weight:700;">+ อัปโหลดรูปภาพ 1:1 จากเครื่อง</button>
+          </div>
+          <div class="field" style="margin-top:8px; margin-bottom:0;">
+            <input class="input" id="inpDirectPhotoUrl" placeholder="หรือใส่ Image URL แล้วกด Enter..." style="font-size:11.5px; padding:6px 10px;" />
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:140px 1fr; gap:12px;">
+          <div class="field" style="margin:0;">
+            <label style="font-weight:700; font-size:12px;">รหัสไอดี (Code) *</label>
+            <input class="input" id="gaCode" placeholder="เช่น ID-001" value="${existingAcc ? escapeHTML(existingAcc.code) : `ID-${String((state.store.gameAccounts || []).length + 1).padStart(3, '0')}`}" style="font-weight:800; text-transform:uppercase;" />
+          </div>
+          <div class="field" style="margin:0;">
+            <label style="font-weight:700; font-size:12px;">ชื่อหัวข้อไอดี (Title) *</label>
+            <input class="input" id="gaTitle" placeholder="เช่น ไอดี HayDay Lv.85 ยุ้งฉาง 3500+" value="${existingAcc ? escapeHTML(existingAcc.title) : ''}" style="font-weight:700;" />
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="field" style="margin:0;">
+            <label style="font-weight:700; font-size:12px;">ราคาขาย (${getCurrencySymbol()}) *</label>
+            <input type="number" step="1" class="input" id="gaPrice" placeholder="เช่น 1290" value="${existingAcc ? existingAcc.price : 990}" style="font-weight:800;" />
+          </div>
+          <div class="field" style="margin:0;">
+            <label style="font-weight:700; font-size:12px;">สถานะ (Status)</label>
+            <select class="select" id="gaStatus" style="font-weight:700; font-size:12.5px;">
+              <option value="available" ${(!existingAcc || existingAcc.status === 'available') ? 'selected' : ''}>พร้อมขาย (Available)</option>
+              <option value="reserved" ${existingAcc?.status === 'reserved' ? 'selected' : ''}>ติดจอง (Reserved)</option>
+              <option value="sold" ${existingAcc?.status === 'sold' ? 'selected' : ''}>ขายแล้ว (Sold Out)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field" style="margin:0;">
+          <label style="font-weight:700; font-size:12px;">รายละเอียดไอดีเกม (Details &amp; Specifications)</label>
+          <textarea class="textarea" id="gaDetails" rows="3" placeholder="ระบุเลเวล ยุ้งฉาง ไซโล เหรียญ เพชร หรือข้อมูลสำคัญของไอดีเกม...">${existingAcc?.details ? escapeHTML(existingAcc.details) : ''}</textarea>
+        </div>
+      </div>
+    `);
+
+    const renderPhotoGrid = () => {
+      const gridEl = body.querySelector('#adminPhotoGrid');
+      const countBadge = body.querySelector('#photoCountBadge');
+      if (countBadge) countBadge.textContent = `${imagesList.length} รูป`;
+      if (!gridEl) return;
+      gridEl.innerHTML = '';
+
+      imagesList.forEach((url, idx) => {
+        const thumb = el(`
+          <div class="admin-photo-thumb-wrap">
+            ${renderMediaHtml(url, `Photo ${idx + 1}`)}
+            <button type="button" class="admin-photo-del-btn" data-idx="${idx}" title="ลบรูปนี้">✕</button>
+          </div>
+        `);
+        thumb.querySelector('.admin-photo-del-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          imagesList.splice(idx, 1);
+          renderPhotoGrid();
+        });
+        gridEl.appendChild(thumb);
+      });
+
+      const addBox = el(`
+        <div class="admin-photo-add-box" id="btnAddBoxTrigger">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          <span style="margin-top:2px;">เพิ่มรูป</span>
+        </div>
+      `);
+      addBox.addEventListener('click', () => fileInp.click());
+      gridEl.appendChild(addBox);
+    };
+
+    const fileInp = body.querySelector('#fileMultiPhotoUpload');
+    const triggerBtn = body.querySelector('#btnTriggerMultiUpload');
+    const directUrlInp = body.querySelector('#inpDirectPhotoUrl');
+
+    triggerBtn.addEventListener('click', () => fileInp.click());
+    fileInp.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      triggerBtn.disabled = true;
+      triggerBtn.textContent = 'กำลังอัปโหลด...';
+      try {
+        const url = await uploadProductImage(file);
+        imagesList.push(url);
+        renderPhotoGrid();
+        toast('อัปโหลดรูปภาพ 1:1 เรียบร้อย', 'success');
+      } catch (err) {
+        toast('อัปโหลดไม่สำเร็จ: ' + (err.message || err), 'error');
+      } finally {
+        triggerBtn.disabled = false;
+        triggerBtn.textContent = '+ อัปโหลดรูปภาพ 1:1 จากเครื่อง';
+        fileInp.value = '';
+      }
+    });
+
+    directUrlInp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const u = directUrlInp.value.trim();
+        if (u && u.startsWith('http')) {
+          imagesList.push(u);
+          directUrlInp.value = '';
+          renderPhotoGrid();
+          toast('เพิ่มรูปภาพจาก URL เรียบร้อย', 'success');
+        }
+      }
+    });
+
+    renderPhotoGrid();
+
+    openModal({
+      title: isEdit ? `แก้ไขไอดีเกม (${existingAcc.code})` : 'เพิ่มไอดีเกมใหม่ (Add Game ID)',
+      body,
+      actions: [
+        { label: 'Cancel', kind: 'ghost' },
+        {
+          label: isEdit ? 'บันทึกการเปลี่ยนแปลง' : 'สร้างไอดีเกม',
+          kind: 'primary',
+          onClick: () => {
+            const code = body.querySelector('#gaCode')?.value.trim() || 'ID-001';
+            const title = body.querySelector('#gaTitle')?.value.trim() || 'ไอดีเกม HayDay';
+            const price = Number(body.querySelector('#gaPrice')?.value || 990);
+            const status = body.querySelector('#gaStatus')?.value || 'available';
+            const details = body.querySelector('#gaDetails')?.value.trim() || '';
+
+            state.store.gameAccounts = state.store.gameAccounts || [];
+            if (isEdit) {
+              existingAcc.code = code;
+              existingAcc.title = title;
+              existingAcc.price = price;
+              existingAcc.status = status;
+              existingAcc.details = details;
+              existingAcc.images = imagesList;
+              toast(`อัปเดตไอดี "${code}" แล้ว`, 'success');
+            } else {
+              const newAcc = {
+                id: 'ga_' + Date.now(),
+                code,
+                title,
+                price,
+                status,
+                details,
+                images: imagesList
+              };
+              state.store.gameAccounts.unshift(newAcc);
+              toast(`เพิ่มไอดี "${code}" สำเร็จ`, 'success');
+            }
+            syncStoreSettingsAcrossDevices();
+            renderPage();
+          }
+        }
+      ]
+    });
+  }
+
+  function openGameAccountQuickViewModal(acc) {
+    let currentSlide = 0;
+    const images = (acc.images && acc.images.length > 0) ? acc.images.filter(Boolean) : [];
+
+    const body = el(`
+      <div>
+        <!-- 1:1 Image Slider in Quick View -->
+        <div class="game-id-gallery-wrap" style="max-width:380px; margin:0 auto 16px;">
+          <div class="game-id-gallery-track" id="qvGalleryTrack">
+            ${images.length > 0 ? images.map((img, i) => `
+              <div class="game-id-gallery-slide">
+                ${renderMediaHtml(img, `${acc.title} Photo ${i+1}`)}
+              </div>
+            `).join('') : `
+              <div class="game-id-gallery-slide">
+                ${renderMediaHtml('', acc.title)}
+              </div>
+            `}
+          </div>
+
+          ${images.length > 1 ? `
+            <button type="button" class="game-id-gallery-btn prev" id="qvPrev" aria-label="Previous">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <button type="button" class="game-id-gallery-btn next" id="qvNext" aria-label="Next">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <div class="game-id-dots" id="qvDots">
+              ${images.map((_, i) => `<div class="game-id-dot ${i === 0 ? 'active' : ''}" data-idx="${i}"></div>`).join('')}
+            </div>
+          ` : ''}
+
+          <span class="game-id-badge ${acc.status || 'available'}">
+            ${acc.status === 'sold' ? 'ขายแล้ว (Sold Out)' : acc.status === 'reserved' ? 'ติดจอง (Reserved)' : 'พร้อมส่งมอบ (Available)'}
+          </span>
+        </div>
+
+        <div style="text-align:left;">
+          <div class="flex items-center gap-2" style="margin-bottom:4px;">
+            <span class="badge" style="background:var(--primary-100); color:var(--accent-text); font-weight:800; font-size:12px;">${escapeHTML(acc.code)}</span>
+          </div>
+          <h3 style="font-size:17px; font-weight:800; color:var(--text); margin:4px 0 8px;">${escapeHTML(acc.title)}</h3>
+          <div style="font-size:22px; font-weight:900; color:var(--accent-text); margin-bottom:12px;">${money(acc.price)}</div>
+          
+          <div style="background:var(--primary-50); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:10px;">
+            <div style="font-size:12px; font-weight:800; color:var(--accent-text); margin-bottom:4px;">รายละเอียดไอดีเกม (Specifications)</div>
+            <div style="font-size:13px; color:var(--text); line-height:1.6; white-space:pre-line;">${escapeHTML(acc.details || 'ไม่มีรายละเอียดเพิ่มเติม')}</div>
+          </div>
+        </div>
+      </div>
+    `);
+
+    if (images.length > 1) {
+      const track = body.querySelector('#qvGalleryTrack');
+      const dots = body.querySelectorAll('.game-id-dot');
+      const updateSlide = (idx) => {
+        currentSlide = (idx + images.length) % images.length;
+        if (track) track.style.transform = `translateX(-${currentSlide * 100}%)`;
+        dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+      };
+      body.querySelector('#qvPrev')?.addEventListener('click', (e) => { e.stopPropagation(); updateSlide(currentSlide - 1); });
+      body.querySelector('#qvNext')?.addEventListener('click', (e) => { e.stopPropagation(); updateSlide(currentSlide + 1); });
+      dots.forEach(d => d.addEventListener('click', (e) => { e.stopPropagation(); updateSlide(+d.dataset.idx); }));
+    }
+
+    openModal({
+      title: `ข้อมูลไอดีเกม: ${acc.code}`,
+      body,
+      actions: [
+        { label: 'Close', kind: 'ghost' },
+        ...(acc.status === 'available' ? [{
+          label: `สั่งซื้อไอดีนี้ (${money(acc.price)})`,
+          kind: 'primary',
+          onClick: () => {
+            const cartKey = 'game_acc_' + acc.id;
+            state.selected[cartKey] = 1;
+            toast(`เพิ่มไอดี "${acc.code}" ลงในตะกร้าแล้ว`, 'success');
+            renderPage();
+          }
+        }] : [])
+      ]
+    });
+  }
 
   function openProductQuickModal(p) {
     const stockLabel = p.stock === 0 ? 'Out of stock' : p.stock < 10 ? `Low · ${p.stock} left` : `${p.stock} in stock`;
     const stockCls = p.stock === 0 ? 'danger' : p.stock < 10 ? 'warn' : 'success';
     const mediaHtml = p.image
-      ? `<img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" style="width:72px;height:72px;border-radius:14px;object-fit:cover;flex:none;" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" /><div style="display:none;width:72px;height:72px;place-items:center;font-size:34px;border-radius:14px;background:var(--primary-50);flex:none;">${p.emoji || ''}</div>`
-      : `<div style="width:72px;height:72px;display:grid;place-items:center;font-size:34px;border-radius:14px;background:var(--primary-50);flex:none">${p.emoji || ''}</div>`;
+      ? `<img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" style="width:72px;height:72px;border-radius:14px;object-fit:cover;flex:none;" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" /><div style="display:none;width:72px;height:72px;place-items:center;font-size:13px;font-weight:700;border-radius:14px;background:var(--primary-50);flex:none;color:var(--accent-text);">${escapeHTML(p.cat || 'Item')}</div>`
+      : `<div style="width:72px;height:72px;display:grid;place-items:center;font-size:13px;font-weight:700;border-radius:14px;background:var(--primary-50);flex:none;color:var(--accent-text);">${escapeHTML(p.cat || 'Item')}</div>`;
 
     const body = el(`
       <div>
@@ -3598,8 +5500,8 @@
       body: el(`
         <div class="grid" style="gap:14px;">
           <div style="background:var(--primary-50); padding:12px 14px; border-radius:14px; border:1px solid var(--border); display:flex; align-items:center; gap:12px;">
-            <div style="width:48px; height:48px; border-radius:10px; overflow:hidden; background:var(--card); display:grid; place-items:center; border:1px solid var(--border); flex:none;">
-              ${prod.image ? `<img src="${escapeHTML(prod.image)}" alt="${escapeHTML(prod.name)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';" /><span style="display:none; font-size:24px;">${prod.emoji || '🍰'}</span>` : `<span style="font-size:24px;">${prod.emoji || '🍰'}</span>`}
+            <div style="width:48px; height:48px; border-radius:10px; overflow:hidden; background:var(--card); display:grid; place-items:center; border:1px solid var(--border); flex:none; color:var(--accent-text);">
+              ${prod.image ? `<img src="${escapeHTML(prod.image)}" alt="${escapeHTML(prod.name)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='grid';" /><div style="display:none; width:100%; height:100%; place-items:center;">${ICONS.products}</div>` : `<div style="display:grid; width:100%; height:100%; place-items:center;">${ICONS.products}</div>`}
             </div>
             <div style="flex:1; min-width:0;">
               <div style="font-weight:800; font-size:14.5px; color:var(--text);">${escapeHTML(prod.name)}</div>
@@ -3670,7 +5572,7 @@
         <!-- Photo Upload Box (Mandatory Photo, No Emojis) -->
         <div style="background:var(--primary-50); padding:16px; border-radius:16px; border:1.5px solid var(--border); text-align:center;">
           <div style="position:relative; width:130px; height:130px; border-radius:16px; border:2px dashed var(--border); background:var(--card); display:grid; place-items:center; overflow:hidden; margin:0 auto 10px; box-shadow:var(--shadow-soft);">
-            <img id="prodImgPreview" src="${currentImage || DEFAULT_PRODUCT_IMG}" style="width:100%; height:100%; object-fit:cover; display:${currentImage ? 'block' : 'none'};" onerror="this.style.display='none'; document.getElementById('prodNoPhotoPrompt').style.display='flex';" />
+            <img id="prodImgPreview" src="${escapeHTML(currentImage)}" style="width:100%; height:100%; object-fit:cover; display:${currentImage ? 'block' : 'none'};" onerror="this.style.display='none'; document.getElementById('prodNoPhotoPrompt').style.display='flex';" />
             <div id="prodNoPhotoPrompt" style="display:${currentImage ? 'none' : 'flex'}; flex-direction:column; align-items:center; justify-content:center; padding:10px; color:var(--muted); font-size:12px; font-weight:700;">
               <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--accent-text); margin-bottom:4px;"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
               <span>ยังไม่มีรูปภาพ</span>
@@ -3717,18 +5619,14 @@
           <input class="input" id="newCustomCatName" placeholder="เช่น Cakes, Specials, Coffee..." />
         </div>
 
-        <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; gap:12px">
-          <div class="field">
-            <label style="font-weight:700; font-size:12.5px;">ระดับเลเวล (Item Level) *</label>
-            <input type="number" class="input" id="pLevel" min="1" max="200" value="${existing ? (existing.level || 1) : 1}"/>
-          </div>
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap:12px">
           <div class="field">
             <label style="font-weight:700; font-size:12.5px;">จำนวนสต็อก (Stock Quantity) *</label>
             <input type="number" class="input" id="pStock" value="${existing ? existing.stock : 50}"/>
           </div>
           <div class="field">
-            <label style="font-weight:700; font-size:12.5px;">คำบรรยาย / รสชาติ</label>
-            <input class="input" id="pFlavor" placeholder="เช่น ไอเทมขยายพื้นที่, สตรอว์เบอร์รี่" value="${existing?.flavor ? escapeHTML(existing.flavor) : ''}"/>
+            <label style="font-weight:700; font-size:12.5px;">คำบรรยาย / รสชาติ (Description / Flavor)</label>
+            <input class="input" id="pFlavor" placeholder="เช่น สตรอว์เบอร์รี่สด ครีมนุ่มละมุน" value="${existing?.flavor ? escapeHTML(existing.flavor) : ''}"/>
           </div>
         </div>
       </div>
@@ -3801,7 +5699,6 @@
               cat = 'Bakery';
             }
           }
-          const level = Number($('#pLevel')?.value || 1);
           const price = Number($('#pPrice')?.value || 8.50);
           const stock = Number($('#pStock')?.value || 50);
           const flavor = $('#pFlavor')?.value.trim() || '';
@@ -3816,7 +5713,6 @@
           if (existing) {
             existing.name = name;
             existing.cat = cat;
-            existing.level = level;
             existing.image = image;
             existing.price = price;
             existing.stock = stock;
@@ -3825,7 +5721,6 @@
             if (supabase) {
               const { error } = await supabase.from('products').update({
                 name,
-                level,
                 price,
                 stock,
                 cat,
@@ -3855,7 +5750,6 @@
               id: newId,
               name,
               cat,
-              level,
               price,
               stock,
               status,
@@ -3867,7 +5761,6 @@
               const storeId = state.storeId || '00000000-0000-0000-0000-000000000001';
               const { data: inserted, error } = await supabase.from('products').insert({
                 name,
-                level,
                 price,
                 stock,
                 cat,
@@ -3887,7 +5780,6 @@
                   id: inserted.id,
                   name: inserted.name,
                   cat: inserted.cat || cat,
-                  level: Number(inserted.level || level),
                   price: Number(inserted.price || price),
                   stock: Number(inserted.stock !== undefined ? inserted.stock : stock),
                   status: (inserted.stock === 0 || inserted.is_active === false) ? 'out' : (inserted.stock < 10) ? 'low' : 'active',
@@ -4000,70 +5892,6 @@
     `);
     root.appendChild(catBar);
 
-    // Level Categories & Classification Management (Requirement 5)
-    const currentLevels = (state.store.levelRanges && state.store.levelRanges.length) ? state.store.levelRanges : DEFAULT_STORE_CONFIG.levelRanges;
-    const levelBar = el(`
-      <div class="card" style="margin-bottom:16px;">
-        <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:12px;">
-          <div>
-            <div class="card-title">Level Classification (หมวดหมู่เลเวลสินค้าในเกม)</div>
-            <div class="card-sub">ตั้งค่าช่วงเลเวลเพื่อใช้กรองในหน้าสินค้าของลูกค้า (All Levels Multi-Dropdown)</div>
-          </div>
-          <button class="btn btn-primary btn-sm" id="btnAddLevelRange">+ เพิ่มช่วงเลเวลใหม่</button>
-        </div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;" id="levelRangesWrap">
-          ${currentLevels.map((lvl, idx) => `
-            <div style="background:var(--primary-50); border:1.5px solid var(--border); padding:6px 14px; border-radius:12px; display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--accent-text);">
-              <span>Lv. ${escapeHTML(lvl)}</span>
-              <button type="button" class="btn-del-level" data-idx="${idx}" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:800; padding:0 2px; font-size:13px;" title="ลบช่วงเลเวลนี้">✕</button>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `);
-    root.appendChild(levelBar);
-
-    levelBar.querySelector('#btnAddLevelRange')?.addEventListener('click', () => {
-      openModal({
-        title: 'เพิ่มช่วงเลเวลใหม่ (Add Level Range)',
-        body: `
-          <div class="field">
-            <label>ระบุช่วงเลเวล (เช่น 1 - 10, 101 - 150, 150+)</label>
-            <input class="input" id="newLevelInput" placeholder="e.g. 101 - 150 หรือ 150+" />
-          </div>
-        `,
-        actions: [
-          { label: 'Cancel', kind: 'ghost' },
-          { label: 'เพิ่มช่วงเลเวล', kind: 'primary', onClick: () => {
-            const val = $('#newLevelInput')?.value.trim();
-            if (!val) return toast('โปรดระบุช่วงเลเวล', 'error');
-            if (!state.store.levelRanges) state.store.levelRanges = [...DEFAULT_STORE_CONFIG.levelRanges];
-            if (!state.store.levelRanges.includes(val)) {
-              state.store.levelRanges.push(val);
-              try { localStorage.setItem('haypos_store_settings', JSON.stringify(state.store)); } catch (e) {}
-              syncStoreSettingsAcrossDevices();
-              toast(`เพิ่มช่วงเลเวล "${val}" เรียบร้อยแล้ว`, 'success');
-              renderPage();
-            } else {
-              toast('มีช่วงเลเวลนี้อยู่แล้ว', 'info');
-            }
-          }}
-        ]
-      });
-    });
-
-    levelBar.querySelectorAll('.btn-del-level').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = Number(btn.dataset.idx);
-        if (!state.store.levelRanges) state.store.levelRanges = [...DEFAULT_STORE_CONFIG.levelRanges];
-        const removed = state.store.levelRanges.splice(idx, 1);
-        try { localStorage.setItem('haypos_store_settings', JSON.stringify(state.store)); } catch (e) {}
-        syncStoreSettingsAcrossDevices();
-        toast(`ลบช่วงเลเวล ${removed[0]} แล้ว`, 'info');
-        renderPage();
-      });
-    });
-
     // Products table list under categories
     const prodTableCard = el(`
       <div class="card" style="padding:0; overflow:hidden;">
@@ -4092,7 +5920,7 @@
                 <tr data-id="${p.id}">
                   <td>
                     <div style="width:42px; height:42px; border-radius:10px; overflow:hidden; background:var(--primary-50); display:grid; place-items:center; border:1px solid var(--border);">
-                      <img src="${escapeHTML(p.image || DEFAULT_PRODUCT_IMG)}" alt="${escapeHTML(p.name)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.src='${DEFAULT_PRODUCT_IMG}';" />
+                      ${renderMediaHtml(p.image, p.name)}
                     </div>
                   </td>
                   <td>
@@ -4197,408 +6025,6 @@
   };
 
   // ============================================================
-  // PAGE 4.5: Setting Price (Category & Level Tier Rules)
-  // ============================================================
-  PAGES.pricing = (root) => {
-    let currentRules = JSON.parse(JSON.stringify(state.store.priceRules || DEFAULT_STORE_CONFIG.priceRules || []));
-
-    const render = () => {
-      root.innerHTML = '';
-      const head = el(`
-        <div class="page-head">
-          <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:12px;">
-            <div>
-              <h1 class="page-title">Setting Price (ตั้งค่าราคา &amp; สเต็ปตามเลเวลและหมวดหมู่)</h1>
-              <div class="page-sub">จัดการกำหนดสเต็ปราคาสินค้าขายส่งตามหมวดหมู่และช่วงเลเวล (เช่น อาหารสัตว์ Lv. 1-75, Lv. 76-256 หรือ All Level)</div>
-            </div>
-            <button class="btn btn-primary" id="btnAddNewRuleBox" style="font-weight:700; display:inline-flex; align-items:center; gap:6px;">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              <span>เพิ่มกล่องราคาใหม่ (+ Add Price Rule Box)</span>
-            </button>
-          </div>
-        </div>
-      `);
-      root.appendChild(head);
-
-      const body = el(`
-        <div style="display:flex; flex-direction:column; gap:16px;">
-          <div style="font-weight:800; font-size:14px; color:var(--accent-text);">
-            กล่องราคาที่เปิดใช้งาน (${currentRules.length} กล่อง)
-          </div>
-
-          ${currentRules.length === 0 ? `
-            <div class="card" style="text-align:center; padding:40px 16px; background:var(--card); border:1.5px dashed var(--border); border-radius:18px;">
-              <div style="font-size:15px; font-weight:800; color:var(--text); margin-bottom:6px;">ยังไม่มีการตั้งค่ากล่องราคา</div>
-              <div style="font-size:12.5px; color:var(--muted); margin-bottom:14px;">กดปุ่ม <strong>+ เพิ่มกล่องราคาใหม่</strong> ด้านบนเพื่อสร้างสเต็ปราคาตามหมวดหมู่และเลเวล</div>
-            </div>
-          ` : `
-            <div class="pricing-rules-grid">
-              ${currentRules.map((rule, rIdx) => {
-                const tiers = rule.tiers || [];
-                const stepQty = rule.stepQty || 1;
-                return `
-                  <div class="pricing-rule-card" data-ridx="${rIdx}">
-                    <!-- Card Header -->
-                    <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:8px;">
-                      <div class="flex items-center gap-2" style="flex-wrap:wrap;">
-                        <span class="badge" style="background:var(--primary-100); color:var(--accent-text); font-weight:800; font-size:12px; padding:4px 10px; display:inline-flex; align-items:center; gap:5px;">
-                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                          <span>${escapeHTML(rule.category || 'ทุกหมวดหมู่')}</span>
-                        </span>
-                        <span class="badge ${rule.levelDisplay === 'All Level' || rule.levelDisplay === 'ทุกเลเวล' ? 'info' : 'success'}" style="font-weight:800; font-size:12px; padding:4px 10px; display:inline-flex; align-items:center; gap:5px;">
-                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                          <span>${escapeHTML(rule.levelDisplay || 'All Level')}</span>
-                        </span>
-                      </div>
-                      <div class="flex items-center gap-1">
-                        <button type="button" class="btn btn-sm btn-ghost btn-edit-rule" data-ridx="${rIdx}" title="แก้ไขข้อมูลกล่อง" style="font-size:12px; padding:4px 8px; color:var(--text);">
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-ghost btn-del-rule" data-ridx="${rIdx}" title="ลบกล่องนี้" style="color:var(--danger); font-size:12px; padding:4px 8px;">
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Step Quantity Increment Setting for Item Clicks -->
-                    <div style="display:flex; align-items:center; justify-content:space-between; background:var(--primary-50); border:1px solid var(--border); border-radius:10px; padding:7px 12px; margin:8px 0;">
-                      <div style="display:flex; align-items:center; gap:6px;">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                        <span style="font-size:12px; font-weight:700; color:var(--text);">กดคลิกเพิ่มทีละ:</span>
-                      </div>
-                      <div style="display:flex; align-items:center; gap:6px;">
-                        <input type="number" class="input rule-step-qty" data-ridx="${rIdx}" value="${stepQty}" min="1" style="width:64px; padding:3px 6px; font-size:12px; font-weight:800; text-align:center;" />
-                        <span style="font-size:11.5px; color:var(--muted); font-weight:600;">ชิ้น / คลิก</span>
-                      </div>
-                    </div>
-
-                    <!-- Tiers List (Clean, No "ช่วงราคา" or "ช่องที่" words) -->
-                    <div style="display:flex; flex-direction:column; gap:6px; margin:4px 0;">
-                      <div class="flex items-center" style="justify-content:space-between; margin:4px 0 2px;">
-                        <span style="font-size:12px; font-weight:800; color:var(--accent-text);">รายการราคา (${tiers.length})</span>
-                        <button type="button" class="btn btn-sm btn-ghost btn-add-tier-slot" data-ridx="${rIdx}" style="font-size:12px; font-weight:700; color:var(--primary-600); padding:2px 8px; border:1px solid var(--border); border-radius:8px; display:inline-flex; align-items:center; gap:4px;">
-                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                          <span>เพิ่มราคา</span>
-                        </button>
-                      </div>
-                      
-                      ${tiers.length === 0 ? `
-                        <div style="font-size:12px; color:var(--muted); text-align:center; padding:10px; background:var(--primary-50); border-radius:10px;">
-                          ยังไม่มีราคาที่กำหนด (กดปุ่ม เพิ่มราคา ด้านบน)
-                        </div>
-                      ` : tiers.map((t, tIdx) => `
-                        <div class="pricing-tier-row" style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-radius:10px; background:var(--card); border:1px solid var(--border);">
-                          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <strong style="font-size:13.5px; color:var(--text);">${t.qty} ชิ้น</strong>
-                            <span style="color:var(--muted); font-size:12px;">→</span>
-                            <strong style="font-size:13.5px; color:var(--accent-text);">${money(t.price)}</strong>
-                            <span style="font-size:11px; color:var(--muted); font-weight:500;">(${money(Number(t.price)/Number(t.qty))}/ชิ้น)</span>
-                          </div>
-                          <button type="button" class="btn btn-sm btn-ghost btn-del-tier-slot" data-ridx="${rIdx}" data-tidx="${tIdx}" style="color:var(--danger); font-size:12px; padding:2px 6px;" title="ลบ">
-                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                          </button>
-                        </div>
-                      `).join('')}
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          `}
-        </div>
-      `);
-      root.appendChild(body);
-
-      const persistRules = () => {
-        state.store.priceRules = currentRules;
-        try {
-          localStorage.setItem('haypos_store_settings', JSON.stringify(state.store));
-        } catch (e) {}
-        syncStoreSettingsAcrossDevices();
-      };
-
-      // Step Quantity Input Change Listeners
-      body.querySelectorAll('.rule-step-qty').forEach(inp => {
-        inp.addEventListener('change', (e) => {
-          const rIdx = Number(inp.dataset.ridx);
-          const val = parseInt(e.target.value, 10);
-          if (currentRules[rIdx]) {
-            currentRules[rIdx].stepQty = (!val || val < 1) ? 1 : val;
-            persistRules();
-            toast(`ตั้งค่าเพิ่มทีละ ${currentRules[rIdx].stepQty} ชิ้น/คลิก เรียบร้อย`, 'success');
-          }
-        });
-      });
-
-      // Add Rule Box
-      head.querySelector('#btnAddNewRuleBox')?.addEventListener('click', () => {
-        let selectedCat = CATEGORIES[0]?.name || 'Bakery';
-        let levelType = 'range'; // 'range' or 'all'
-
-        openModal({
-          title: 'เพิ่มกล่องราคาใหม่ (+ Add Price Rule Box)',
-          body: `
-            <div style="display:flex; flex-direction:column; gap:14px;">
-              <div class="field">
-                <label style="font-size:12px; font-weight:700;">หมวดหมู่สินค้า (Category) *</label>
-                <select class="select" id="ruleCatSelect" style="font-weight:700;">
-                  ${CATEGORIES.map(c => `<option value="${escapeHTML(c.name)}">${escapeHTML(c.name)}</option>`).join('')}
-                </select>
-              </div>
-
-              <div class="field">
-                <label style="font-size:12px; font-weight:700;">การกำหนดเลเวล (Level Requirement) *</label>
-                <div class="flex gap-2" style="margin-bottom:8px;">
-                  <button type="button" class="btn btn-sm btn-primary" id="btnLvlTypeRange" style="font-size:12px;">ระบุช่วงเลเวล (เช่น 1 - 75)</button>
-                  <button type="button" class="btn btn-sm" id="btnLvlTypeAll" style="font-size:12px;">All Level (ทุกเลเวล)</button>
-                </div>
-                
-                <div id="ruleRangeInputs" class="grid" style="grid-template-columns:1fr 1fr; gap:10px;">
-                  <div class="field" style="margin:0;">
-                    <label style="font-size:11px;">เลเวลเริ่มต้น (Min Level)</label>
-                    <input class="input" type="number" id="ruleMinLevel" value="1" min="1" />
-                  </div>
-                  <div class="field" style="margin:0;">
-                    <label style="font-size:11px;">เลเวลสิ้นสุด (Max Level)</label>
-                    <input class="input" type="number" id="ruleMaxLevel" value="75" min="1" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="field">
-                <label style="font-size:12px; font-weight:700;">จำนวนที่เพิ่มต่อการกดคลิก 1 ครั้ง (Step Quantity)</label>
-                <input class="input" type="number" id="ruleStepQtyInput" value="1" min="1" placeholder="เช่น 1, 10, 50" />
-              </div>
-            </div>
-          `,
-          actions: [
-            { label: 'Cancel', kind: 'ghost' },
-            {
-              label: 'สร้างกล่องราคา',
-              kind: 'primary',
-              onClick: () => {
-                const cat = $('#ruleCatSelect')?.value || selectedCat;
-                const isRange = levelType === 'range';
-                const min = isRange ? parseInt($('#ruleMinLevel')?.value || 1, 10) : 1;
-                const max = isRange ? parseInt($('#ruleMaxLevel')?.value || 99999, 10) : 99999;
-                const lvlDisplay = isRange ? `${min} - ${max}` : 'All Level';
-                const stepQty = parseInt($('#ruleStepQtyInput')?.value, 10) || 1;
-
-                currentRules.push({
-                  id: Date.now(),
-                  category: cat,
-                  levelDisplay: lvlDisplay,
-                  minLevel: min,
-                  maxLevel: max,
-                  stepQty: stepQty,
-                  tiers: [
-                    { qty: 10, price: 2 },
-                    { qty: 50, price: 8 },
-                    { qty: 100, price: 15 }
-                  ]
-                });
-
-                persistRules();
-                render();
-                toast(`สร้างกล่องราคาสำหรับหมวดหมู่ "${cat}" (${lvlDisplay}) เรียบร้อย`, 'success');
-              }
-            }
-          ]
-        });
-
-        // Wire level type toggle in modal
-        setTimeout(() => {
-          const btnRange = $('#btnLvlTypeRange');
-          const btnAll = $('#btnLvlTypeAll');
-          const rangeWrap = $('#ruleRangeInputs');
-          btnRange?.addEventListener('click', () => {
-            levelType = 'range';
-            btnRange.classList.add('btn-primary');
-            btnAll.classList.remove('btn-primary');
-            if (rangeWrap) rangeWrap.style.display = 'grid';
-          });
-          btnAll?.addEventListener('click', () => {
-            levelType = 'all';
-            btnAll.classList.add('btn-primary');
-            btnRange.classList.remove('btn-primary');
-            if (rangeWrap) rangeWrap.style.display = 'none';
-          });
-        }, 50);
-      });
-
-      // Edit Box Modal
-      body.querySelectorAll('.btn-edit-rule').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const rIdx = Number(btn.dataset.ridx);
-          const rule = currentRules[rIdx];
-          if (!rule) return;
-
-          let isAll = (rule.levelDisplay === 'All Level' || rule.levelDisplay === 'ทุกเลเวล');
-          let levelType = isAll ? 'all' : 'range';
-
-          openModal({
-            title: `แก้ไขกล่องราคา (${rule.category})`,
-            body: `
-              <div style="display:flex; flex-direction:column; gap:14px;">
-                <div class="field">
-                  <label style="font-size:12px; font-weight:700;">หมวดหมู่สินค้า (Category) *</label>
-                  <select class="select" id="editRuleCatSelect" style="font-weight:700;">
-                    ${CATEGORIES.map(c => `<option value="${escapeHTML(c.name)}" ${c.name === rule.category ? 'selected' : ''}>${escapeHTML(c.name)}</option>`).join('')}
-                  </select>
-                </div>
-
-                <div class="field">
-                  <label style="font-size:12px; font-weight:700;">การกำหนดเลเวล (Level Requirement) *</label>
-                  <div class="flex gap-2" style="margin-bottom:8px;">
-                    <button type="button" class="btn btn-sm ${!isAll ? 'btn-primary' : ''}" id="btnEditLvlTypeRange" style="font-size:12px;">ระบุช่วงเลเวล</button>
-                    <button type="button" class="btn btn-sm ${isAll ? 'btn-primary' : ''}" id="btnEditLvlTypeAll" style="font-size:12px;">All Level (ทุกเลเวล)</button>
-                  </div>
-                  
-                  <div id="editRuleRangeInputs" class="grid" style="grid-template-columns:1fr 1fr; gap:10px; display:${!isAll ? 'grid' : 'none'};">
-                    <div class="field" style="margin:0;">
-                      <label style="font-size:11px;">เลเวลเริ่มต้น (Min Level)</label>
-                      <input class="input" type="number" id="editRuleMinLevel" value="${rule.minLevel || 1}" min="1" />
-                    </div>
-                    <div class="field" style="margin:0;">
-                      <label style="font-size:11px;">เลเวลสิ้นสุด (Max Level)</label>
-                      <input class="input" type="number" id="editRuleMaxLevel" value="${rule.maxLevel || 75}" min="1" />
-                    </div>
-                  </div>
-                </div>
-
-                <div class="field">
-                  <label style="font-size:12px; font-weight:700;">จำนวนที่เพิ่มต่อการกดคลิก 1 ครั้ง (Step Quantity)</label>
-                  <input class="input" type="number" id="editRuleStepQtyInput" value="${rule.stepQty || 1}" min="1" placeholder="เช่น 1, 10, 50" />
-                </div>
-              </div>
-            `,
-            actions: [
-              { label: 'Cancel', kind: 'ghost' },
-              {
-                label: 'บันทึกการแก้ไข',
-                kind: 'primary',
-                onClick: () => {
-                  const cat = $('#editRuleCatSelect')?.value || rule.category;
-                  const isRange = levelType === 'range';
-                  const min = isRange ? parseInt($('#editRuleMinLevel')?.value || 1, 10) : 1;
-                  const max = isRange ? parseInt($('#editRuleMaxLevel')?.value || 99999, 10) : 99999;
-                  const lvlDisplay = isRange ? `${min} - ${max}` : 'All Level';
-                  const stepQty = parseInt($('#editRuleStepQtyInput')?.value, 10) || 1;
-
-                  rule.category = cat;
-                  rule.levelDisplay = lvlDisplay;
-                  rule.minLevel = min;
-                  rule.maxLevel = max;
-                  rule.stepQty = stepQty;
-
-                  persistRules();
-                  render();
-                  toast('อัปเดตกล่องราคาเรียบร้อย', 'success');
-                }
-              }
-            ]
-          });
-
-          setTimeout(() => {
-            const btnRange = $('#btnEditLvlTypeRange');
-            const btnAll = $('#btnEditLvlTypeAll');
-            const rangeWrap = $('#editRuleRangeInputs');
-            btnRange?.addEventListener('click', () => {
-              levelType = 'range';
-              btnRange.classList.add('btn-primary');
-              btnAll.classList.remove('btn-primary');
-              if (rangeWrap) rangeWrap.style.display = 'grid';
-            });
-            btnAll?.addEventListener('click', () => {
-              levelType = 'all';
-              btnAll.classList.add('btn-primary');
-              btnRange.classList.remove('btn-primary');
-              if (rangeWrap) rangeWrap.style.display = 'none';
-            });
-          }, 50);
-        });
-      });
-
-      // Delete Box
-      body.querySelectorAll('.btn-del-rule').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const rIdx = Number(btn.dataset.ridx);
-          const rule = currentRules[rIdx];
-          if (!rule) return;
-          confirmDialog(`Delete price box for "${rule.category}" (${rule.levelDisplay})?`, () => {
-            currentRules.splice(rIdx, 1);
-            persistRules();
-            render();
-            toast('ลบกล่องราคาเรียบร้อย', 'info');
-          });
-        });
-      });
-
-      // Add Price Slot (Two simple boxes: Quantity and Price)
-      body.querySelectorAll('.btn-add-tier-slot').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const rIdx = Number(btn.dataset.ridx);
-          const rule = currentRules[rIdx];
-          if (!rule) return;
-
-          openModal({
-            title: `เพิ่มราคา: ${rule.category} (${rule.levelDisplay})`,
-            body: `
-              <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px;">
-                <div class="field">
-                  <label style="font-size:12px; font-weight:700;">จำนวนชิ้น (ชิ้น) *</label>
-                  <input class="input" type="number" id="inpNewTierQty" placeholder="เช่น 10, 50, 100" min="1" autofocus />
-                </div>
-                <div class="field">
-                  <label style="font-size:12px; font-weight:700;">ราคา (บาท) *</label>
-                  <input class="input" type="number" id="inpNewTierPrice" placeholder="เช่น 2, 8, 15" min="0" step="0.01" />
-                </div>
-              </div>
-            `,
-            actions: [
-              { label: 'Cancel', kind: 'ghost' },
-              {
-                label: 'บันทึกราคา',
-                kind: 'primary',
-                onClick: () => {
-                  const qty = parseInt($('#inpNewTierQty')?.value, 10);
-                  const price = parseFloat($('#inpNewTierPrice')?.value);
-                  if (!qty || isNaN(price)) return toast('กรุณากรอกจำนวนและราคาให้ถูกต้อง', 'error');
-
-                  if (!rule.tiers) rule.tiers = [];
-                  rule.tiers.push({ qty, price });
-                  rule.tiers.sort((a, b) => Number(a.qty) - Number(b.qty));
-
-                  persistRules();
-                  render();
-                  toast(`เพิ่ม ${qty} ชิ้น = ${money(price)} แล้ว`, 'success');
-                }
-              }
-            ]
-          });
-        });
-      });
-
-      // Delete Tier Slot
-      body.querySelectorAll('.btn-del-tier-slot').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const rIdx = Number(btn.dataset.ridx);
-          const tIdx = Number(btn.dataset.tidx);
-          const rule = currentRules[rIdx];
-          if (!rule || !rule.tiers) return;
-
-          rule.tiers.splice(tIdx, 1);
-          persistRules();
-          render();
-          toast('ลบราคาเรียบร้อย', 'info');
-        });
-      });
-    };
-
-    render();
-  };
-
-  // ============================================================
   // PAGE 5: Stock
   // ============================================================
   PAGES.stock = (root) => {
@@ -4680,7 +6106,7 @@
                   <td>
                     <div class="flex items-center gap-3">
                       <div style="width:38px; height:38px; border-radius:8px; overflow:hidden; background:var(--primary-50); border:1px solid var(--border); flex:none;">
-                        <img src="${escapeHTML(s.image || DEFAULT_PRODUCT_IMG)}" alt="${escapeHTML(s.name)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='${DEFAULT_PRODUCT_IMG}';" />
+                        ${renderMediaHtml(s.image, s.name)}
                       </div>
                       <div>
                         <strong style="font-size:13.5px;">${escapeHTML(s.name)}</strong>
@@ -5752,17 +7178,49 @@
     let currentReceiptFooterType = state.store.receiptFooterType === 'qr' ? 'image' : (state.store.receiptFooterType || 'image');
     let currentReceiptFooterImage = state.store.receiptFooterImage || '';
     let currentQrPaymentImage = state.store.qr_image_url || '';
-    let currentHomeMascotImage = state.store.homeMascotImage || '';
-    let currentAnnImage = state.store.announcementImage || '';
-    let currentHighlights = JSON.parse(JSON.stringify(state.store.highlights || DEFAULT_STORE_CONFIG.highlights));
+    let currentContacts = Array.isArray(state.store.homeContacts) && state.store.homeContacts.length > 0
+      ? JSON.parse(JSON.stringify(state.store.homeContacts))
+      : [
+          { id: 'c_line', platform: 'line', label: 'Line OA', url: state.store.homeContactLineUrl || state.store.lineUrl || '' },
+          { id: 'c_fb', platform: 'facebook', label: 'Facebook', url: state.store.homeContactFbUrl || state.store.facebookUrl || '' }
+        ];
+    let currentHighlights = JSON.parse(JSON.stringify(state.store.highlights || DEFAULT_STORE_CONFIG.highlights || []));
+    while (currentHighlights.length < 4) {
+      currentHighlights.push({ iconType: 'image', icon: '', image: '', title: `จุดเด่น #${currentHighlights.length + 1}`, sub: '' });
+    }
     let currentPaymentAccounts = JSON.parse(JSON.stringify(state.store.payment_accounts || DEFAULT_STORE_CONFIG.payment_accounts));
-    let currentContactChannels = JSON.parse(JSON.stringify(state.store.contactChannels || DEFAULT_STORE_CONFIG.contactChannels));
-    let currentCategoryPricing = JSON.parse(JSON.stringify(state.store.categoryPricing || DEFAULT_STORE_CONFIG.categoryPricing));
 
     const formWrap = el(`
       <div style="display:flex; flex-direction:column; gap:20px;">
         
-        <!-- SECTION 1: Sidebar Brand Logo & Storefront Header -->
+        <!-- SECTION 1: Top Contact & Support Header Card -->
+        <div class="card">
+          <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div>
+              <div class="card-title">Top Contact &amp; Support Header Card (กล่องติดต่อสอบถาม &amp; แจ้งรหัสออเดอร์ บนหน้าแรก)</div>
+              <div class="card-sub">ปรับแต่งหัวข้อ, คำบรรยายเวลาทำการ, และเพิ่ม/ลด/เลือกช่องทางติดต่อ (Line, Facebook, IG, TikTok, X, ฯลฯ)</div>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary" id="btnAddContactChannel" style="font-weight:700; font-size:12px; padding:6px 14px;">+ เพิ่มช่องทางติดต่อ</button>
+          </div>
+          
+          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:14px; margin-top:14px; margin-bottom:16px;">
+            <div class="field">
+              <label style="font-weight:700;">หัวข้อกล่องติดต่อ (Contact Box Title)</label>
+              <input class="input" id="setHomeContactTitle" value="${escapeHTML(state.store.homeContactTitle || 'ติดต่อสอบถาม & แจ้งรหัสออเดอร์')}" placeholder="เช่น ติดต่อสอบถาม & แจ้งรหัสออเดอร์" />
+            </div>
+            <div class="field">
+              <label style="font-weight:700;">คำบรรยาย / เวลาทำการ (Subtitle &amp; Schedule)</label>
+              <input class="input" id="setHomeContactSub" value="${escapeHTML(state.store.homeContactSub || 'ตอบกลับไว ให้บริการทุกวัน 08:00 - 22:00 น.')}" placeholder="เช่น ตอบกลับไว ให้บริการทุกวัน 08:00 - 22:00 น." />
+            </div>
+          </div>
+
+          <div style="font-weight:800; font-size:13px; color:var(--text); margin-bottom:10px;">รายการปุ่มช่องทางติดต่อ (Contact Channels):</div>
+          <div id="contactChannelsList" style="display:flex; flex-direction:column; gap:10px;">
+            <!-- Populated dynamically by renderContactsSettingsList() -->
+          </div>
+        </div>
+
+        <!-- SECTION 2: Sidebar Brand Logo & Storefront Header -->
         <div class="card">
           <div class="card-title">Sidebar Logo &amp; Storefront Header (สี่เหลี่ยมโลโก้ร้านมุมซ้ายบนแถบเมนู &amp; หัวข้อหน้าร้าน)</div>
           <div class="card-sub">ปรับแต่งสี่เหลี่ยมโลโก้ร้านที่มุมซ้ายบนของแถบเมนู Sidebar (เลือกระหว่าง อัปโหลดรูปภาพ หรือ ตัวอักษร/อิโมจิ)</div>
@@ -5867,9 +7325,10 @@
           </div>
         </div>
 
-        <!-- SECTION 3: 4 Highlights Badges -->
+        <!-- SECTION 3: 4 Highlights / Trust Badges -->
         <div class="card">
-          <div class="card-title">4 Highlights Badges ( 4 ช่องบนหน้าโฮม)</div>
+          <div class="card-title">4 Highlights Badges (จุดเด่น 4 ช่องบนหน้าแรก)</div>
+          <div class="card-sub">แก้ไขไอคอน (รูปภาพหรืออิโมจิ), ข้อความ และคำบรรยายของจุดเด่น 4 การ์ดบนหน้า Home</div>
           <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:14px; margin-top:12px;" id="highlightsSettingsList"></div>
         </div>
 
@@ -5893,105 +7352,6 @@
                 <div style="padding:6px 8px; font-size:11.5px; font-weight:700; color:var(--accent-text);">Slide #${idx + 1}</div>
               </div>
             `).join('')}
-          </div>
-        </div>
-
-        <!-- SECTION 4.5: Marquee Announcement Bar (Requirement 4) -->
-        <div class="card">
-          <div class="card-title">Top Marquee Announcement Bar (ข้อความวิ่งประกาศแถบขาวด้านบนหน้าร้าน)</div>
-          <div class="card-sub">ปรับแต่งไอคอน (รูปภาพหรืออิโมจิ) และข้อความประกาศวิ่งด้านบนสุดของหน้าร้าน</div>
-          
-          <div style="background:var(--primary-50); padding:14px; border-radius:14px; border:1px solid var(--border); margin-top:12px;">
-            <div style="font-weight:700; font-size:13.5px; margin-bottom:10px; color:var(--text);">ไอคอน / รูปภาพประกาศ (Announcement Icon/Image)</div>
-            <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
-              <div style="width:46px; height:46px; border-radius:50%; overflow:hidden; border:2px dashed var(--primary-600); background:var(--card); display:grid; place-items:center; flex:none;">
-                <img id="annImgPreview" src="${escapeHTML(currentAnnImage)}" style="width:100%; height:100%; object-fit:cover; display:${currentAnnImage ? 'block' : 'none'};" onerror="this.style.display='none';" />
-                <span id="annImgFallback" style="font-size:22px; display:${currentAnnImage ? 'none' : 'block'};">${escapeHTML(state.store.announcementIcon || '📢')}</span>
-              </div>
-              <div style="flex:1;">
-                <input type="file" id="fileAnnImg" accept="image/*" style="display:none;" />
-                <div class="flex gap-2">
-                  <button type="button" class="btn btn-sm" id="btnUploadAnnImg" style="font-size:11.5px; padding:4px 12px; font-weight:700;">+ อัปโหลดรูปไอคอน</button>
-                  <button type="button" class="btn btn-sm btn-ghost" id="btnClearAnnImg" style="font-size:11.5px; padding:4px 8px; color:var(--danger); display:${currentAnnImage ? 'inline-block' : 'none'};">ลบรูป</button>
-                </div>
-                <input class="input" id="setAnnImgUrl" value="${escapeHTML(currentAnnImage)}" placeholder="หรือวาง URL รูปภาพไอคอน" style="font-size:12px; margin-top:6px;" />
-              </div>
-            </div>
-
-            <div class="grid" style="grid-template-columns: 140px 1fr; gap:12px;">
-              <div class="field" style="margin-bottom:0;">
-                <label style="font-size:11.5px; font-weight:700;">อิโมจิสำรอง (Fallback Emoji)</label>
-                <input class="input" id="setAnnouncementIcon" value="${escapeHTML(state.store.announcementIcon || '📢')}" style="text-align:center; font-size:18px;" />
-              </div>
-              <div class="field" style="margin-bottom:0;">
-                <label style="font-size:11.5px; font-weight:700;">ข้อความประกาศวิ่ง (Announcement Text) *</label>
-                <input class="input" id="setAnnouncementText" value="${escapeHTML(state.store.announcementText || 'ยินดีต้อนรับสู่ BNC HayMate · สินค้าพร้อมส่งทุกวัน ทักไลน์สอบถามคิวได้ตลอด 24 ชม.')}" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECTION 4.6: Shop Mascot & Dynamic Contact Channels (Requirement 7) -->
-        <div class="card">
-          <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
-            <div>
-              <div class="card-title">Shop Mascot &amp; Contact Channels (มาสคอตร้าน &amp; ช่องทางการติดต่อหน้า Home)</div>
-              <div class="card-sub">ปรับแต่งรูปภาพมาสคอตวงกลม ข้อความด้านบน-ล่าง และเพิ่ม/ลบปุ่มช่องทางติดต่อ (เช่น Line OA, Facebook, IG)</div>
-            </div>
-            <button type="button" class="btn btn-primary btn-sm" id="btnAddContactChannel" style="font-weight:700;">+ เพิ่มช่องทางติดต่อใหม่</button>
-          </div>
-
-          <!-- Mascot Customizer -->
-          <div style="background:var(--primary-50); padding:14px; border-radius:14px; border:1px solid var(--border); margin-top:10px; margin-bottom:14px;">
-            <div style="font-weight:700; font-size:13.5px; margin-bottom:8px; color:var(--text);">รูปภาพมาสคอตร้าน (Mascot Avatar Circle)</div>
-            <div style="display:flex; gap:12px; align-items:center; margin-bottom:10px;">
-              <div style="width:54px; height:54px; border-radius:50%; overflow:hidden; border:2px dashed var(--primary-600); background:var(--card); display:grid; place-items:center; flex:none;">
-                <img id="homeMascotImgPreview" src="${escapeHTML(currentHomeMascotImage)}" style="width:100%; height:100%; object-fit:cover; display:${currentHomeMascotImage ? 'block' : 'none'};" onerror="this.style.display='none';" />
-                <span id="homeMascotImgFallback" style="font-size:22px; display:${currentHomeMascotImage ? 'none' : 'block'};">${escapeHTML(state.store.homeMascotEmoji || '🌸')}</span>
-              </div>
-              <div style="flex:1;">
-                <input type="file" id="fileHomeMascot" accept="image/*" style="display:none;" />
-                <div class="flex gap-2">
-                  <button type="button" class="btn btn-sm" id="btnUploadHomeMascot" style="font-size:11.5px; padding:5px 12px; font-weight:700;">อัปโหลดรูปมาสคอต (วงกลม)</button>
-                  <button type="button" class="btn btn-sm btn-ghost" id="btnClearHomeMascot" style="font-size:11.5px; padding:5px 8px; color:var(--danger); display:${currentHomeMascotImage ? 'inline-block' : 'none'};">ลบรูป</button>
-                </div>
-                <input class="input" id="setHomeMascotImgUrl" value="${escapeHTML(currentHomeMascotImage)}" placeholder="หรือวาง URL รูปภาพมาสคอต" style="font-size:12px; margin-top:6px;" />
-              </div>
-            </div>
-            <div class="grid" style="grid-template-columns: 140px 1fr 1fr; gap:10px;">
-              <div class="field" style="margin-bottom:0;">
-                <label style="font-size:11.5px;">อิโมจิสำรอง</label>
-                <input class="input" id="setHomeMascotEmoji" value="${escapeHTML(state.store.homeMascotEmoji || '🌸')}" style="text-align:center; font-size:16px;" />
-              </div>
-              <div class="field" style="margin-bottom:0;">
-                <label style="font-size:11.5px;">ข้อความบรรทัดบน (Top Text)</label>
-                <input class="input" id="setHomeContactTop" value="${escapeHTML(state.store.homeContactTopText || 'ติดต่อสอบถาม & แจ้งรหัสออเดอร์')}" />
-              </div>
-              <div class="field" style="margin-bottom:0;">
-                <label style="font-size:11.5px;">ข้อความบรรทัดล่าง (Bottom Text)</label>
-                <input class="input" id="setHomeContactBottom" value="${escapeHTML(state.store.homeContactBottomText || 'ตอบกลับไว ให้บริการทุกวัน 08:00 - 22:00 น.')}" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Dynamic Contact Channels List -->
-          <div style="font-weight:700; font-size:13px; margin-bottom:8px; color:var(--text);">รายการปุ่มช่องทางติดต่อ (${currentContactChannels.length} ช่องทาง)</div>
-          <div id="contactChannelsSettingsList" style="display:flex; flex-direction:column; gap:10px;"></div>
-        </div>
-
-        <!-- SECTION 4.8: Order Tracking Queue Step 3 Contact Settings (Requirement 1) -->
-        <div class="card">
-          <div class="card-title">Order Tracking Step 3: Queue &amp; Store Contact (ปุ่มส่งรหัสออเดอร์ในหน้า Tracking)</div>
-          <div class="card-sub">ตั้งค่าข้อความบนปุ่มและลิงก์ช่องทางติดต่อ (เช่น Line OA) เมื่อลูกค้าถึงขั้นตอน You're in queue</div>
-          <div class="grid" style="grid-template-columns: 1fr 1fr; gap:14px; margin-top:12px;">
-            <div class="field">
-              <label>ข้อความบนปุ่มติดต่อ (Contact Button Label)</label>
-              <input class="input" id="setTrackingContactLabel" value="${escapeHTML(state.store.trackingContactLabel || '💬 ทักแชทแจ้งออเดอร์ (Line OA)')}" />
-            </div>
-            <div class="field">
-              <label>ลิงก์ติดต่อร้าน (Contact Link / URL)</label>
-              <input class="input" id="setTrackingContactUrl" value="${escapeHTML(state.store.trackingContactUrl || 'https://line.me/R/ti/p/@bnchaymate')}" placeholder="เช่น https://line.me/R/ti/p/@bnchaymate หรือ https://m.me/..." />
-            </div>
           </div>
         </div>
 
@@ -6151,23 +7511,37 @@
           </div>
         </div>
 
-        <!-- SECTION 7: Tracking Review Calligraphy & Heart Rating Labels Settings -->
+        <!-- SECTION 7: Order Tracking Customization & Review Settings -->
         <div class="card">
-          <div class="card-title">Tracking Review &amp; Heart Labels (ตั้งค่าข้อความรีวิวหน้า Tracking และระดับดวงใจ)</div>
-          <div class="card-sub">กำหนดชื่อร้าน Calligraphy, ข้อความขอบคุณบนหน้า Tracking และข้อความอธิบายการให้คะแนน 1-5 ดวงใจ</div>
+          <div class="card-title">Order Tracking Page &amp; Review (ตั้งค่าหน้าติดตามสถานะออเดอร์)</div>
+          <div class="card-sub">กำหนดข้อความบนปุ่มคัดลอก, ปุ่มติดต่อ/ทักแชท, ลิงก์ติดต่อปลายทาง และกล่องรีวิวสไตล์ Calligraphy</div>
           
           <div class="grid two-col" style="gap:16px; margin-top:14px;">
-            <!-- Left: Tracking Calligraphy Box Settings -->
+            <!-- Left: Tracking Buttons & Contact Link Settings -->
             <div style="background:var(--primary-50); padding:14px; border-radius:14px; border:1px solid var(--border);">
-              <div style="font-weight:700; font-size:13.5px; margin-bottom:10px; color:var(--text);">1. กล่องรีวิวหน้า Tracking (Calligraphy Banner)</div>
+              <div style="font-weight:700; font-size:13.5px; margin-bottom:10px; color:var(--text);">1. ปุ่มคัดลอกและปุ่มติดต่อ (Tracking Buttons &amp; Contact Link)</div>
               
               <div class="field">
+                <label>ข้อความบนปุ่มคัดลอกออเดอร์ (Copy Button Label)</label>
+                <input class="input" id="setTrackingCopyBtnText" value="${escapeHTML(state.store.trackingCopyBtnText || 'คัดลอกรหัสออเดอร์')}" />
+              </div>
+              <div class="field">
+                <label>ข้อความบนปุ่มติดต่อ / ทักแชท (Contact Button Label)</label>
+                <input class="input" id="setTrackingContactBtnText" value="${escapeHTML(state.store.trackingContactBtnText || 'ทักแชทแจ้งออเดอร์ (Line OA)')}" />
+              </div>
+              <div class="field" style="margin-bottom:12px;">
+                <label>ลิงก์ติดต่อปลายทางเมื่อกดปุ่ม (Contact Destination URL) *</label>
+                <input class="input" id="setTrackingContactUrl" placeholder="https://line.me/R/ti/p/@yourstore หรือ https://m.me/yourpage" value="${escapeHTML(state.store.trackingContactUrl || state.store.homeContactLineUrl || state.store.lineUrl || '')}" />
+              </div>
+
+              <div style="font-weight:700; font-size:13.5px; margin-top:14px; margin-bottom:8px; color:var(--text); padding-top:10px; border-top:1px dashed var(--border);">2. กล่องรีวิวหน้า Tracking (Calligraphy Banner)</div>
+              <div class="field">
                 <label>ชื่อร้านสไตล์ Calligraphy (Store Brand Title)</label>
-                <input class="input" id="setTrackingTitle" value="${escapeHTML(state.store.trackingReviewTitle || state.store.receiptStoreName || state.store.name || 'BNC HayMate')}" />
+                <input class="input" id="setTrackingTitle" value="${escapeHTML(state.store.trackingReviewTitle || state.store.receiptStoreName || state.store.name || 'Lilith Store')}" />
               </div>
               <div class="field">
                 <label>ข้อความเล็กๆ ใต้ชื่อร้าน (Sub-message)</label>
-                <input class="input" id="setTrackingSub" value="${escapeHTML(state.store.trackingReviewSub || '')}" />
+                <input class="input" id="setTrackingSub" value="${escapeHTML(state.store.trackingReviewSub || 'Thank you for your support')}" />
               </div>
               <div class="field" style="margin-bottom:0;">
                 <label>ข้อความบนปุ่มรีวิว (Button Text)</label>
@@ -6263,13 +7637,6 @@
                     <input class="input" id="setStickyPinHex" value="${state.store.stickyNotePinColor || '#EFA6C1'}" style="font-size:12px; padding:6px 8px; font-weight:700; font-family:monospace;" />
                   </div>
                 </div>
-                <div class="field" style="grid-column:1 / -1; margin-bottom:0;">
-                  <label style="font-size:11.5px; font-weight:700;">สีฟอนต์ / ตัวหนังสือ (Font Color) *</label>
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <input type="color" id="setStickyTextColor" value="${state.store.stickyNoteTextColor || '#3E3426'}" style="width:36px; height:36px; border:none; border-radius:8px; cursor:pointer; background:transparent;" />
-                    <input class="input" id="setStickyTextColorHex" value="${state.store.stickyNoteTextColor || '#3E3426'}" style="font-size:12px; padding:6px 8px; font-weight:700; font-family:monospace; max-width:140px;" />
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -6277,7 +7644,7 @@
             <div style="background:var(--bg); border:1.5px solid var(--border); border-radius:18px; padding:18px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
               <div style="font-weight:700; font-size:13px; color:var(--muted); margin-bottom:18px; text-align:center;">ตัวอย่างสติกกี้โน้ตแบบสด (Live Preview)</div>
               
-              <div id="stickyLivePreviewCard" class="review-card pinned-sticky tilt-left" style="max-width:280px; width:100%; pointer-events:none; background:${state.store.stickyNoteBg || '#FFFDF2'}; border-color:${state.store.stickyNoteBorder || '#EFE6C7'}; border-bottom-color:${state.store.stickyNoteBottomBorder || '#DFD2A8'}; color:${state.store.stickyNoteTextColor || '#3E3426'};">
+              <div id="stickyLivePreviewCard" class="review-card pinned-sticky tilt-left" style="max-width:280px; width:100%; pointer-events:none; background:${state.store.stickyNoteBg || '#FFFDF2'}; border-color:${state.store.stickyNoteBorder || '#EFE6C7'}; border-bottom-color:${state.store.stickyNoteBottomBorder || '#DFD2A8'};">
                 <div class="sticky-pin-badge" id="prevStickyPinBadge" style="background:${state.store.stickyNotePinColor || '#EFA6C1'};">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 17v5M5 17h14M7 17l1-9h8l1 9M9 8V3h6v5"/></svg>
                   <span>Pinned Note</span>
@@ -6285,12 +7652,12 @@
                 <div class="review-head">
                   <div class="avatar" style="font-size:13px; font-weight:800;">AW</div>
                   <div style="flex:1;">
-                    <div class="review-name" id="prevStickyReviewName" style="font-size:14px; font-weight:700; color:${state.store.stickyNoteTextColor || '#3E3426'};">Anna W.</div>
+                    <div class="review-name" style="font-size:14px; font-weight:700; color:var(--text);">Anna W.</div>
                     <div class="review-date">Today</div>
                   </div>
                   <div class="stars">${renderHearts(5)}</div>
                 </div>
-                <div class="review-text" id="prevStickyReviewText" style="font-size:13px; color:${state.store.stickyNoteTextColor || '#3E3426'}; line-height:1.5;">เค้กนุ่มละมุนมากค่ะ บรรยากาศร้านและแพ็กเกจน่ารักที่สุดเลย 💕</div>
+                <div class="review-text" style="font-size:13px; color:var(--text); line-height:1.5;">เค้กนุ่มละมุนมากค่ะ บรรยากาศร้านและแพ็กเกจน่ารักที่สุดเลย 💕</div>
               </div>
             </div>
           </div>
@@ -6598,6 +7965,85 @@
         hlContainer.appendChild(itemEl);
       });
     };
+
+    renderHighlightsSettingsList();
+
+    // Dynamic Contact Channels List Renderer
+    const renderContactsSettingsList = () => {
+      const container = formWrap.querySelector('#contactChannelsList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (currentContacts.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:16px; background:var(--card); border:1.5px dashed var(--border); border-radius:14px; color:var(--muted); font-size:12.5px;">ยังไม่มีช่องทางติดต่อ กดปุ่ม "+ เพิ่มช่องทางติดต่อ" ด้านบนเพื่อเพิ่ม</div>`;
+        return;
+      }
+
+      currentContacts.forEach((c, idx) => {
+        const platformInfo = SOCIAL_PLATFORMS[c.platform] || SOCIAL_PLATFORMS.custom;
+        const row = el(`
+          <div style="display:flex; gap:10px; align-items:center; background:var(--card); border:1.5px solid var(--border); border-radius:14px; padding:10px 14px; flex-wrap:wrap; box-shadow:var(--shadow-soft);">
+            <div style="width:34px; height:34px; border-radius:10px; background:${platformInfo.bg}; color:${platformInfo.color}; border:1px solid ${platformInfo.border}; display:grid; place-items:center; flex:none;">
+              ${platformInfo.icon}
+            </div>
+            <div class="field" style="width:140px; margin:0; flex:none;">
+              <select class="select set-c-platform" style="padding:7px 10px; font-size:12.5px; border-radius:10px; font-weight:700;">
+                ${Object.entries(SOCIAL_PLATFORMS).map(([k, v]) => `
+                  <option value="${k}" ${c.platform === k ? 'selected' : ''}>${v.name}</option>
+                `).join('')}
+              </select>
+            </div>
+            <div class="field" style="width:150px; margin:0; flex:none;">
+              <input class="input set-c-label" value="${escapeHTML(c.label || platformInfo.name)}" placeholder="ชื่อปุ่ม เช่น Line OA" style="padding:7px 10px; font-size:12.5px; border-radius:10px; font-weight:600;" />
+            </div>
+            <div class="field" style="flex:1; min-width:180px; margin:0;">
+              <input class="input set-c-url" value="${escapeHTML(c.url || '')}" placeholder="ลิงก์ URL เช่น https://line.me/... หรือ https://facebook.com/..." style="padding:7px 10px; font-size:12.5px; border-radius:10px;" />
+            </div>
+            <button type="button" class="btn btn-sm btn-danger btn-del-contact" style="padding:7px 10px; border-radius:10px; flex:none;" title="ลบช่องทางนี้">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+            </button>
+          </div>
+        `);
+
+        row.querySelector('.set-c-platform')?.addEventListener('change', (e) => {
+          c.platform = e.target.value;
+          const newPlatformInfo = SOCIAL_PLATFORMS[c.platform] || SOCIAL_PLATFORMS.custom;
+          if (!c.label || Object.values(SOCIAL_PLATFORMS).some(p => p.name === c.label)) {
+            c.label = newPlatformInfo.name;
+          }
+          renderContactsSettingsList();
+        });
+
+        row.querySelector('.set-c-label')?.addEventListener('input', (e) => {
+          c.label = e.target.value;
+        });
+
+        row.querySelector('.set-c-url')?.addEventListener('input', (e) => {
+          c.url = e.target.value;
+        });
+
+        row.querySelector('.btn-del-contact')?.addEventListener('click', () => {
+          currentContacts.splice(idx, 1);
+          renderContactsSettingsList();
+          toast('ลบช่องทางติดต่อแล้ว', 'info');
+        });
+
+        container.appendChild(row);
+      });
+    };
+
+    formWrap.querySelector('#btnAddContactChannel')?.addEventListener('click', () => {
+      currentContacts.push({
+        id: 'c_' + Date.now(),
+        platform: 'line',
+        label: 'Line OA',
+        url: ''
+      });
+      renderContactsSettingsList();
+      toast('เพิ่มช่องทางติดต่อใหม่แล้ว', 'success');
+    });
+
+    renderContactsSettingsList();
 
     // Brand Logo Handlers
     const btnBrandLogoTypeEmoji = formWrap.querySelector('#btnBrandLogoTypeEmoji');
@@ -7159,283 +8605,29 @@
       state.store = prevStoreConfig;
     });
 
-    // Home Mascot Image Uploader Handlers (Requirement 7)
-    const fileHomeMascot = formWrap.querySelector('#fileHomeMascot');
-    const btnUploadHomeMascot = formWrap.querySelector('#btnUploadHomeMascot');
-    const btnClearHomeMascot = formWrap.querySelector('#btnClearHomeMascot');
-    const homeMascotImgPreview = formWrap.querySelector('#homeMascotImgPreview');
-    const homeMascotImgFallback = formWrap.querySelector('#homeMascotImgFallback');
-    const homeMascotUrlInp = formWrap.querySelector('#setHomeMascotImgUrl');
-
-    btnUploadHomeMascot?.addEventListener('click', () => fileHomeMascot?.click());
-    fileHomeMascot?.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      try {
-        const publicUrl = await uploadProductImage(file);
-        currentHomeMascotImage = publicUrl;
-        if (homeMascotImgPreview) {
-          homeMascotImgPreview.src = currentHomeMascotImage;
-          homeMascotImgPreview.style.display = 'block';
-        }
-        if (homeMascotImgFallback) homeMascotImgFallback.style.display = 'none';
-        if (btnClearHomeMascot) btnClearHomeMascot.style.display = 'inline-block';
-        if (homeMascotUrlInp) homeMascotUrlInp.value = currentHomeMascotImage;
-        toast('อัปโหลดรูปภาพมาสคอตร้านเรียบร้อย', 'success');
-      } catch (err) {
-        toast('อัปโหลดไม่สำเร็จ: ' + (err.message || err), 'error');
-      }
-    });
-
-    homeMascotUrlInp?.addEventListener('input', (e) => {
-      const val = e.target.value.trim();
-      currentHomeMascotImage = val;
-      if (homeMascotImgPreview) {
-        homeMascotImgPreview.src = val;
-        homeMascotImgPreview.style.display = val ? 'block' : 'none';
-      }
-      if (homeMascotImgFallback) homeMascotImgFallback.style.display = val ? 'none' : 'block';
-      if (btnClearHomeMascot) btnClearHomeMascot.style.display = val ? 'inline-block' : 'none';
-    });
-
-    btnClearHomeMascot?.addEventListener('click', () => {
-      currentHomeMascotImage = '';
-      if (homeMascotUrlInp) homeMascotUrlInp.value = '';
-      if (homeMascotImgPreview) homeMascotImgPreview.style.display = 'none';
-      if (homeMascotImgFallback) homeMascotImgFallback.style.display = 'block';
-      btnClearHomeMascot.style.display = 'none';
-      toast('ลบรูปภาพมาสคอตแล้ว', 'info');
-    });
-
-    // Top Marquee Announcement Image Handlers
-    const fileAnnImg = formWrap.querySelector('#fileAnnImg');
-    const btnUploadAnnImg = formWrap.querySelector('#btnUploadAnnImg');
-    const btnClearAnnImg = formWrap.querySelector('#btnClearAnnImg');
-    const annImgPreview = formWrap.querySelector('#annImgPreview');
-    const annImgFallback = formWrap.querySelector('#annImgFallback');
-    const annUrlInp = formWrap.querySelector('#setAnnImgUrl');
-
-    btnUploadAnnImg?.addEventListener('click', () => fileAnnImg?.click());
-    fileAnnImg?.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      try {
-        currentAnnImage = await uploadProductImage(file);
-        if (annImgPreview) {
-          annImgPreview.src = currentAnnImage;
-          annImgPreview.style.display = 'block';
-        }
-        if (annImgFallback) annImgFallback.style.display = 'none';
-        if (btnClearAnnImg) btnClearAnnImg.style.display = 'inline-block';
-        if (annUrlInp) annUrlInp.value = currentAnnImage;
-        toast('อัปโหลดรูปภาพไอคอนประกาศเรียบร้อย', 'success');
-      } catch (err) {
-        toast('อัปโหลดไม่สำเร็จ: ' + (err.message || err), 'error');
-      }
-    });
-
-    annUrlInp?.addEventListener('input', (e) => {
-      const val = e.target.value.trim();
-      currentAnnImage = val;
-      if (annImgPreview) {
-        annImgPreview.src = val;
-        annImgPreview.style.display = val ? 'block' : 'none';
-      }
-      if (annImgFallback) annImgFallback.style.display = val ? 'none' : 'block';
-      if (btnClearAnnImg) btnClearAnnImg.style.display = val ? 'inline-block' : 'none';
-    });
-
-    btnClearAnnImg?.addEventListener('click', () => {
-      currentAnnImage = '';
-      if (annUrlInp) annUrlInp.value = '';
-      if (annImgPreview) annImgPreview.style.display = 'none';
-      if (annImgFallback) annImgFallback.style.display = 'block';
-      btnClearAnnImg.style.display = 'none';
-      toast('ลบรูปภาพไอคอนประกาศแล้ว', 'info');
-    });
-
-    // 4 Highlights Settings Manager (Requirement 6)
-    const renderHighlightsList = () => {
-      const listEl = formWrap.querySelector('#highlightsSettingsList');
-      if (!listEl) return;
-      listEl.innerHTML = '';
-
-      currentHighlights.forEach((h, idx) => {
-        const item = el(`
-          <div class="card" style="background:var(--primary-50); border:1.5px solid var(--border); border-radius:14px; padding:12px 14px; margin:0;">
-            <div style="font-weight:800; font-size:12.5px; color:var(--accent-text); margin-bottom:8px;">ช่อง #${idx + 1}</div>
-            
-            <!-- Graphic / Icon / Photo Upload -->
-            <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
-              <div style="width:40px; height:40px; border-radius:10px; overflow:hidden; border:1.5px dashed var(--border); background:var(--card); display:grid; place-items:center; flex:none;">
-                <img class="h-img-prev" src="${escapeHTML(h.image || '')}" style="width:100%; height:100%; object-fit:contain; display:${h.image ? 'block' : 'none'};" onerror="this.style.display='none';" />
-                <span class="h-ico-fallback" style="font-size:18px; display:${h.image ? 'none' : 'block'};">${escapeHTML(h.icon || '🌸')}</span>
-              </div>
-              <div style="flex:1;">
-                <input type="file" class="h-file-inp" accept="image/*" style="display:none;" />
-                <div class="flex gap-2 items-center" style="margin-bottom:4px;">
-                  <button type="button" class="btn btn-sm btn-upload-h-img" style="font-size:11px; padding:3px 8px; font-weight:700;">+ อัปโหลดรูป</button>
-                  <button type="button" class="btn btn-sm btn-ghost btn-clear-h-img" style="font-size:11px; padding:3px 6px; color:var(--danger); display:${h.image ? 'inline-block' : 'none'};">ลบรูป</button>
-                </div>
-                <input class="input h-icon" value="${escapeHTML(h.icon || '')}" placeholder="หรือใส่อิโมจิ" style="font-size:12px; padding:3px 6px; width:90px;" />
-              </div>
-            </div>
-
-            <div class="field" style="margin-bottom:8px;">
-              <label style="font-size:11px; font-weight:700;">หัวข้อ (Title)</label>
-              <input class="input h-title" value="${escapeHTML(h.title || '')}" style="font-size:12px; padding:6px 8px;" />
-            </div>
-            <div class="field" style="margin:0;">
-              <label style="font-size:11px; font-weight:700;">คำบรรยาย (Subtitle)</label>
-              <input class="input h-sub" value="${escapeHTML(h.sub || '')}" style="font-size:12px; padding:6px 8px;" />
-            </div>
-          </div>
-        `);
-
-        const fileInp = item.querySelector('.h-file-inp');
-        const btnUpload = item.querySelector('.btn-upload-h-img');
-        const btnClear = item.querySelector('.btn-clear-h-img');
-        const imgPrev = item.querySelector('.h-img-prev');
-        const icoFallback = item.querySelector('.h-ico-fallback');
-
-        btnUpload?.addEventListener('click', () => fileInp?.click());
-        fileInp?.addEventListener('change', async (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          try {
-            const url = await uploadProductImage(file);
-            h.image = url;
-            h.iconType = 'image';
-            if (imgPrev) { imgPrev.src = url; imgPrev.style.display = 'block'; }
-            if (icoFallback) icoFallback.style.display = 'none';
-            renderHighlightsList();
-            toast(`อัปโหลดรูปภาพสำหรับช่อง #${idx + 1} เรียบร้อย`, 'success');
-          } catch (err) {
-            toast('อัปโหลดไม่สำเร็จ: ' + (err.message || err), 'error');
-          }
-        });
-
-        btnClear?.addEventListener('click', () => {
-          h.image = '';
-          h.iconType = 'emoji';
-          renderHighlightsList();
-          toast(`ลบรูปภาพช่อง #${idx + 1} แล้ว`, 'info');
-        });
-
-        item.querySelector('.h-icon')?.addEventListener('input', (e) => {
-          h.icon = e.target.value;
-          if (icoFallback && !h.image) icoFallback.textContent = e.target.value;
-        });
-        item.querySelector('.h-title')?.addEventListener('input', (e) => { h.title = e.target.value; });
-        item.querySelector('.h-sub')?.addEventListener('input', (e) => { h.sub = e.target.value; });
-
-        listEl.appendChild(item);
-      });
-    };
-    renderHighlightsList();
-
-    // Contact Channels Dynamic List Renderer with Photo Upload (Requirement 1 & 7)
-    const renderContactChannelsList = () => {
-      const listEl = formWrap.querySelector('#contactChannelsSettingsList');
-      if (!listEl) return;
-      listEl.innerHTML = '';
-
-      if (currentContactChannels.length === 0) {
-        listEl.innerHTML = `
-          <div style="text-align:center; padding:16px; background:var(--card); border:1.5px dashed var(--border); border-radius:12px; color:var(--muted); font-size:12.5px;">
-            ยังไม่มีปุ่มช่องทางติดต่อ กดปุ่ม <strong>+ เพิ่มช่องทางติดต่อใหม่</strong> ด้านบน
-          </div>
-        `;
-        return;
-      }
-
-      currentContactChannels.forEach((ch, idx) => {
-        const row = el(`
-          <div class="card" style="background:var(--card); border:1.5px solid var(--border); border-radius:14px; padding:12px 14px; margin:0;">
-            <div class="flex items-center" style="justify-content:space-between; margin-bottom:8px;">
-              <span style="font-size:12.5px; font-weight:800; color:var(--accent-text);">ช่องทาง #${idx + 1}</span>
-              <button type="button" class="btn btn-sm btn-ghost btn-del-ch" data-idx="${idx}" style="color:var(--danger); font-size:11.5px; padding:2px 6px; font-weight:700;">ลบ</button>
-            </div>
-            
-            <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-              <!-- Photo/Icon Area -->
-              <div style="display:flex; align-items:center; gap:8px;">
-                <div style="width:38px; height:38px; border-radius:8px; border:1px solid var(--border); background:var(--primary-50); display:grid; place-items:center; overflow:hidden; flex:none;">
-                  <img class="ch-img-prev" src="${escapeHTML(ch.image || '')}" style="width:100%; height:100%; object-fit:cover; display:${ch.image ? 'block' : 'none'};" onerror="this.style.display='none';" />
-                  <span class="ch-ico-fallback" style="font-size:16px; display:${ch.image ? 'none' : 'block'};">${escapeHTML(ch.icon || '💬')}</span>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:2px;">
-                  <input type="file" class="ch-file-inp" accept="image/*" style="display:none;" />
-                  <button type="button" class="btn btn-sm btn-upload-ch-img" style="font-size:10.5px; padding:2px 6px; font-weight:700;">+ อัปโหลดรูป</button>
-                  <input class="input ch-icon" value="${escapeHTML(ch.icon || '💬')}" placeholder="อิโมจิ" style="width:70px; padding:3px 4px; font-size:12px; text-align:center;" />
-                </div>
-              </div>
-
-              <!-- Name & Link -->
-              <div class="field" style="flex:1; min-width:120px; margin-bottom:0;">
-                <label style="font-size:11px; font-weight:700;">ชื่อปุ่ม (Label) *</label>
-                <input class="input ch-name" value="${escapeHTML(ch.name || '')}" placeholder="เช่น Line OA, Facebook" style="padding:6px 10px; font-size:12px;" />
-              </div>
-              <div class="field" style="flex:1.5; min-width:160px; margin-bottom:0;">
-                <label style="font-size:11px; font-weight:700;">ลิงก์ URL *</label>
-                <input class="input ch-link" value="${escapeHTML(ch.link || '')}" placeholder="เช่น https://line.me/... หรือ https://facebook.com/..." style="padding:6px 10px; font-size:12px;" />
-              </div>
-            </div>
-          </div>
-        `);
-
-        const fileInp = row.querySelector('.ch-file-inp');
-        const btnUpload = row.querySelector('.btn-upload-ch-img');
-        const imgPrev = row.querySelector('.ch-img-prev');
-        const icoFallback = row.querySelector('.ch-ico-fallback');
-
-        btnUpload?.addEventListener('click', () => fileInp?.click());
-        fileInp?.addEventListener('change', async (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          try {
-            const url = await uploadProductImage(file);
-            ch.image = url;
-            if (imgPrev) { imgPrev.src = url; imgPrev.style.display = 'block'; }
-            if (icoFallback) icoFallback.style.display = 'none';
-            toast('อัปโหลดรูปภาพช่องทางติดต่อเรียบร้อย', 'success');
-          } catch (err) {
-            toast('อัปโหลดไม่สำเร็จ: ' + (err.message || err), 'error');
-          }
-        });
-
-        row.querySelector('.ch-icon')?.addEventListener('input', (e) => {
-          ch.icon = e.target.value;
-          if (icoFallback && !ch.image) icoFallback.textContent = e.target.value;
-        });
-        row.querySelector('.ch-name')?.addEventListener('input', (e) => { ch.name = e.target.value; });
-        row.querySelector('.ch-link')?.addEventListener('input', (e) => { ch.link = e.target.value; });
-        row.querySelector('.btn-del-ch')?.addEventListener('click', () => {
-          currentContactChannels.splice(idx, 1);
-          renderContactChannelsList();
-          toast('ลบช่องทางติดต่อแล้ว', 'info');
-        });
-
-        listEl.appendChild(row);
-      });
-    };
-
-    renderContactChannelsList();
-
-    formWrap.querySelector('#btnAddContactChannel')?.addEventListener('click', () => {
-      currentContactChannels.push({
-        id: Date.now(),
-        name: 'Line OA',
-        icon: '💬',
-        image: '',
-        link: 'https://line.me'
-      });
-      renderContactChannelsList();
-      toast('เพิ่มช่องทางติดต่อใหม่แล้ว', 'success');
-    });
-
     // Bind save actions
     const doSave = () => {
+      // Save Top Contact Header Card Settings
+      state.store.homeContactTitle = formWrap.querySelector('#setHomeContactTitle')?.value.trim() || 'ติดต่อสอบถาม & แจ้งรหัสออเดอร์';
+      state.store.homeContactSub = formWrap.querySelector('#setHomeContactSub')?.value.trim() || 'ตอบกลับไว ให้บริการทุกวัน 08:00 - 22:00 น.';
+      state.store.homeContacts = currentContacts.map(c => ({
+        id: c.id || ('c_' + Date.now()),
+        platform: c.platform || 'custom',
+        label: (c.label || '').trim() || (SOCIAL_PLATFORMS[c.platform] || SOCIAL_PLATFORMS.custom).name,
+        url: (c.url || '').trim()
+      }));
+
+      const lineContact = state.store.homeContacts.find(c => c.platform === 'line');
+      if (lineContact && lineContact.url) {
+        state.store.homeContactLineUrl = lineContact.url;
+        state.store.lineUrl = lineContact.url;
+      }
+      const fbContact = state.store.homeContacts.find(c => c.platform === 'facebook');
+      if (fbContact && fbContact.url) {
+        state.store.homeContactFbUrl = fbContact.url;
+        state.store.facebookUrl = fbContact.url;
+      }
+
       state.store.brandLogoType = currentBrandLogoType;
       state.store.brandLogoImage = (currentBrandLogoImage && !currentBrandLogoImage.startsWith('(Uploaded')) ? currentBrandLogoImage : (formWrap.querySelector('#setBrandLogoImgUrl')?.value && formWrap.querySelector('#setBrandLogoImgUrl').value !== '(Uploaded Photo)' ? formWrap.querySelector('#setBrandLogoImgUrl').value : currentBrandLogoImage || '');
       state.store.brandLogoText = formWrap.querySelector('#setBrandLogoText')?.value.trim() || 'B';
@@ -7448,25 +8640,6 @@
       state.store.heroIconType = heroIconType;
       state.store.heroEmoji = formWrap.querySelector('#setHeroEmoji')?.value.trim() || '';
       state.store.heroImage = (heroImage && !heroImage.startsWith('(Uploaded')) ? heroImage : (heroUrlInp?.value && heroUrlInp.value !== '(Uploaded Photo)' && heroUrlInp.value.startsWith('http') ? heroUrlInp.value : heroImage);
-
-      // Save Marquee Announcement (Requirement 4)
-      state.store.announcementIcon = formWrap.querySelector('#setAnnouncementIcon')?.value.trim() || '📢';
-      state.store.announcementImage = (currentAnnImage && !currentAnnImage.startsWith('(Uploaded')) ? currentAnnImage : (annUrlInp?.value && annUrlInp.value !== '(Uploaded Photo)' ? annUrlInp.value : currentAnnImage || '');
-      state.store.announcementText = formWrap.querySelector('#setAnnouncementText')?.value.trim() || '';
-
-      // Save Home Mascot & Contact Channels (Requirement 7)
-      state.store.homeMascotImage = currentHomeMascotImage;
-      state.store.homeMascotEmoji = formWrap.querySelector('#setHomeMascotEmoji')?.value.trim() || '🌸';
-      state.store.homeContactTopText = formWrap.querySelector('#setHomeContactTop')?.value.trim() || 'ติดต่อสอบถาม & แจ้งรหัสออเดอร์';
-      state.store.homeContactBottomText = formWrap.querySelector('#setHomeContactBottom')?.value.trim() || 'ตอบกลับไว ให้บริการทุกวัน 08:00 - 22:00 น.';
-      state.store.contactChannels = currentContactChannels;
-
-      // Save Category Step & Tier Pricing (Requirement 3)
-      state.store.categoryPricing = currentCategoryPricing;
-
-      // Save Order Tracking Step 3 Contact (Requirement 1)
-      state.store.trackingContactLabel = formWrap.querySelector('#setTrackingContactLabel')?.value.trim() || '💬 ทักแชทแจ้งออเดอร์ (Line OA)';
-      state.store.trackingContactUrl = formWrap.querySelector('#setTrackingContactUrl')?.value.trim() || 'https://line.me/R/ti/p/@bnchaymate';
 
       // Save Review Celebration Popup Settings
       state.store.reviewPopupTitle = formWrap.querySelector('#setReviewPopupTitle')?.value.trim() || 'Thank You';
@@ -7496,10 +8669,15 @@
       state.store.receiptFooterMsg = formWrap.querySelector('#setReceiptFooterMsg')?.value.trim() || 'Thank you for your order';
       state.store.receiptFooterSub = formWrap.querySelector('#setReceiptFooterSub')?.value.trim() || '';
 
+      // Tracking Page Customization Save
+      state.store.trackingCopyBtnText = formWrap.querySelector('#setTrackingCopyBtnText')?.value.trim() || 'คัดลอกรหัสออเดอร์';
+      state.store.trackingContactBtnText = formWrap.querySelector('#setTrackingContactBtnText')?.value.trim() || 'ทักแชทแจ้งออเดอร์ (Line OA)';
+      state.store.trackingContactUrl = formWrap.querySelector('#setTrackingContactUrl')?.value.trim() || '';
+
       // Tracking Review Calligraphy & Star Labels Save (STARS PRESERVED)
-      state.store.trackingReviewTitle = formWrap.querySelector('#setTrackingTitle')?.value.trim() || 'BNC HayMate Bakery';
+      state.store.trackingReviewTitle = formWrap.querySelector('#setTrackingTitle')?.value.trim() || 'Lilith Store';
       state.store.trackingReviewSub = formWrap.querySelector('#setTrackingSub')?.value.trim() || 'Thank you for your support';
-      state.store.trackingReviewBtnText = formWrap.querySelector('#setTrackingBtnText')?.value.trim() || 'เขียนรีวิวและให้คะแนนร้านค้า';
+      state.store.trackingReviewBtnText = formWrap.querySelector('#setTrackingBtnText')?.value.trim() || 'เขียนรีวิว & ให้คะแนนร้าน';
       state.store.starLabel1 = formWrap.querySelector('#setStarLabel1')?.value.trim() || '1 ดาว - ต้องปรับปรุง';
       state.store.starLabel2 = formWrap.querySelector('#setStarLabel2')?.value.trim() || '2 ดาว - พอใช้ได้';
       state.store.starLabel3 = formWrap.querySelector('#setStarLabel3')?.value.trim() || '3 ดาว - ปานกลาง / รสชาติดี';
@@ -7518,7 +8696,6 @@
       state.store.stickyNoteBorder = formWrap.querySelector('#setStickyBorder')?.value || '#EFE6C7';
       state.store.stickyNoteBottomBorder = formWrap.querySelector('#setStickyBottom')?.value || '#DFD2A8';
       state.store.stickyNotePinColor = formWrap.querySelector('#setStickyPin')?.value || '#EFA6C1';
-      state.store.stickyNoteTextColor = formWrap.querySelector('#setStickyTextColor')?.value || formWrap.querySelector('#setStickyTextColorHex')?.value || '#3E3426';
       applyStickyNoteTheme();
 
       // Save QR Code Payment Image
@@ -7592,31 +8769,23 @@
     const sBottomHex = formWrap.querySelector('#setStickyBottomHex');
     const sPinInp = formWrap.querySelector('#setStickyPin');
     const sPinHex = formWrap.querySelector('#setStickyPinHex');
-    const sTextInp = formWrap.querySelector('#setStickyTextColor');
-    const sTextHex = formWrap.querySelector('#setStickyTextColorHex');
 
     const updateStickyPreview = () => {
       const prevCard = formWrap.querySelector('#stickyLivePreviewCard');
       const prevPin = formWrap.querySelector('#prevStickyPinBadge');
-      const prevName = formWrap.querySelector('#prevStickyReviewName');
-      const prevTxt = formWrap.querySelector('#prevStickyReviewText');
       const bg = sBgInp ? sBgInp.value : '#FFFDF2';
       const border = sBorderInp ? sBorderInp.value : '#EFE6C7';
       const bottom = sBottomInp ? sBottomInp.value : '#DFD2A8';
       const pin = sPinInp ? sPinInp.value : '#EFA6C1';
-      const text = sTextInp ? sTextInp.value : '#3E3426';
 
       if (prevCard) {
         prevCard.style.background = bg;
         prevCard.style.borderColor = border;
         prevCard.style.borderBottomColor = bottom;
-        prevCard.style.color = text;
       }
       if (prevPin) {
         prevPin.style.background = pin;
       }
-      if (prevName) prevName.style.color = text;
-      if (prevTxt) prevTxt.style.color = text;
     };
 
     // Color pickers <-> Hex sync
@@ -7638,7 +8807,6 @@
     syncColor(sBorderInp, sBorderHex);
     syncColor(sBottomInp, sBottomHex);
     syncColor(sPinInp, sPinHex);
-    syncColor(sTextInp, sTextHex);
 
     // Preset buttons
     formWrap.querySelectorAll('.btn-sticky-preset').forEach(btn => {
@@ -7654,10 +8822,6 @@
           if (sBottomHex) sBottomHex.value = p.bottom;
           if (sPinInp) sPinInp.value = p.pin;
           if (sPinHex) sPinHex.value = p.pin;
-          if (p.text) {
-            if (sTextInp) sTextInp.value = p.text;
-            if (sTextHex) sTextHex.value = p.text;
-          }
           updateStickyPreview();
           toast(`เลือกโทนสีสติกกี้โน้ต: ${p.name}`, 'info');
         }
@@ -7978,16 +9142,18 @@
     root.appendChild(view);
 
     let currentStoreTab = 'home';
+    state.storeProductSubTab = state.storeProductSubTab || 'items';
+
     function updateFloatingCartBtn() {
       let floatBtn = document.getElementById('storeFloatingCartBtn');
       const totalQty = Object.values(state.selected).reduce((a, b) => a + Number(b || 0), 0);
       const totalPrice = Object.entries(state.selected).reduce((sum, [id, q]) => {
-        const p = PRODUCTS.find(x => String(x.id) === String(id));
-        return sum + (p ? getItemPrice(p, q) : 0);
+        const item = getCartItemDetails(id);
+        return sum + (item ? Number(item.price) * Number(q) : 0);
       }, 0);
 
-      // Only show floating button on Store page when actively viewing 'products' tab and items > 0
-      if (totalQty > 0 && state.page === 'store' && currentStoreTab === 'products') {
+      // Show floating button on Store page when viewing 'products' or 'home' tab and items > 0
+      if (totalQty > 0 && state.page === 'store' && (currentStoreTab === 'products' || currentStoreTab === 'home')) {
         if (!floatBtn) {
           floatBtn = el(`
             <button type="button" id="storeFloatingCartBtn" class="floating-cart-btn" title="ไปที่ตะกร้าสินค้า">
@@ -8030,71 +9196,98 @@
       state.storeTab = key;
       view.innerHTML = '';
       updateFloatingCartBtn();
-      if (key === 'home') {
-        // 1. Mascot & Contact Channels Section (Home Page Top - Requirement 1)
-        const mascotImg = state.store.homeMascotImage || '';
-        const mascotEmoji = state.store.homeMascotEmoji || '🌸';
-        const contactTop = state.store.homeContactTopText || 'ติดต่อสอบถาม & แจ้งรหัสออเดอร์';
-        const contactBottom = state.store.homeContactBottomText || 'ตอบกลับไว ให้บริการทุกวัน 08:00 - 22:00 น.';
-        const channels = (state.store.contactChannels && state.store.contactChannels.length) ? state.store.contactChannels : DEFAULT_STORE_CONFIG.contactChannels;
 
-        const mascotContactEl = el(`
-          <div class="home-mascot-contact-card">
-            <div class="mascot-avatar-circle" title="Shop Mascot">
-              ${mascotImg ? `<img src="${escapeHTML(mascotImg)}" alt="Shop Mascot" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='grid';" /><span style="display:none;">${escapeHTML(mascotEmoji)}</span>` : `<span>${escapeHTML(mascotEmoji)}</span>`}
-            </div>
-            <div style="flex:1; min-width:200px;">
-              <div style="font-size:11.5px; font-weight:700; color:var(--muted); margin-bottom:2px;">${escapeHTML(contactTop)}</div>
-              <div class="contact-channels-wrap">
-                ${channels.map(ch => {
-                  const chIcon = ch.image ? `<img src="${escapeHTML(ch.image)}" alt="" onerror="this.style.display='none';" />` : (ch.icon ? `<span>${escapeHTML(ch.icon)}</span>` : '');
-                  return `<a href="${escapeHTML(ch.link || '#')}" target="_blank" rel="noopener noreferrer" class="btn-contact-channel">${chIcon}<span>${escapeHTML(ch.name || 'ติดต่อร้าน')}</span></a>`;
-                }).join('')}
+      const isItemsActive = state.store.enableItems !== false;
+      const isCoinFarmActive = state.store.enableCoinFarm !== false;
+      const isGameIdsActive = state.store.enableGameIds !== false;
+
+      if (key === 'home') {
+        const contactTitle = state.store.homeContactTitle || 'ติดต่อสอบถาม & แจ้งรหัสออเดอร์';
+        const contactSub = state.store.homeContactSub || 'ตอบกลับไว ให้บริการทุกวัน 08:00 - 22:00 น.';
+        const contactsList = Array.isArray(state.store.homeContacts) && state.store.homeContacts.length > 0
+          ? state.store.homeContacts
+          : [
+              { platform: 'line', label: 'Line OA', url: state.store.homeContactLineUrl || state.store.lineUrl || '' },
+              { platform: 'facebook', label: 'Facebook', url: state.store.homeContactFbUrl || state.store.facebookUrl || '' }
+            ];
+
+        const topContactCard = el(`
+          <div class="home-top-contact-card">
+            <div style="display:flex; align-items:center; gap:14px; flex:1; flex-wrap:wrap;">
+              <div style="width:52px; height:52px; border-radius:50%; background:var(--primary-50); border:1.5px solid var(--border); display:grid; place-items:center; flex:none;">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="var(--accent-text)" style="opacity:0.9;"><path d="M12 2a3 3 0 0 0-3 3c0 .8.3 1.5.8 2.1A5.5 5.5 0 0 0 4 12.5C4 15.5 6.5 18 9.5 18c.8 0 1.5-.2 2.1-.5.4.3.9.5 1.4.5a3 3 0 0 0 3-3c0-.8-.3-1.5-.8-2.1A5.5 5.5 0 0 0 20 7.5C20 4.5 17.5 2 14.5 2c-.8 0-1.5.2-2.1.5-.4-.3-.9-.5-1.4-.5Z"/><circle cx="12" cy="10" r="2" fill="#fff"/></svg>
               </div>
-              <div style="font-size:11px; color:var(--muted); font-weight:500; margin-top:2px;">${escapeHTML(contactBottom)}</div>
+              <div style="flex:1; min-width:240px;">
+                <div style="font-size:13.5px; font-weight:800; color:var(--text); margin-bottom:6px;">${escapeHTML(contactTitle)}</div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  ${contactsList.map((c, idx) => {
+                    const info = SOCIAL_PLATFORMS[c.platform] || SOCIAL_PLATFORMS.custom;
+                    return `
+                      <button type="button" class="home-contact-pill-btn btn-contact-dynamic" data-idx="${idx}" style="background:${info.bg}; color:${info.color}; border-color:${info.border}; cursor:pointer;">
+                        ${info.icon}
+                        <span>${escapeHTML(c.label || info.name)}</span>
+                      </button>
+                    `;
+                  }).join('')}
+                </div>
+                <div style="font-size:11.5px; color:var(--muted); margin-top:6px;">${escapeHTML(contactSub)}</div>
+              </div>
             </div>
           </div>
         `);
-        view.appendChild(mascotContactEl);
+        view.appendChild(topContactCard);
 
-        // 2. Carousel Container (Dynamic Slides, 1:1 Aspect Ratio)
+        topContactCard.querySelectorAll('.btn-contact-dynamic').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = Number(btn.dataset.idx);
+            const c = contactsList[idx];
+            if (c && c.url) {
+              window.open(c.url, '_blank');
+            } else {
+              toast(`ช่องทาง ${c?.label || 'ติดต่อ'}: ยังไม่ได้ระบุลิงก์`, 'info');
+            }
+          });
+        });
+
+        // 2. Carousel Container (Dynamic Slides, 1:1 Aspect Ratio at Top)
+        const slidesToRender = (Array.isArray(BANNERS) && BANNERS.length > 0)
+          ? BANNERS
+          : DEFAULT_BANNERS;
+
         const carouselEl = el(`
           <div>
             ${state.isAdmin ? `
               <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:8px;">
                 <button class="btn btn-sm" id="btnAdminEditBanners" style="background:var(--card); border:1.5px solid var(--border); color:var(--accent-text); font-size:12px; font-weight:700; cursor:pointer;">
-                  จัดการรูปสไลด์ (${BANNERS.length} รูป)
+                  จัดการรูปสไลด์ (${slidesToRender.length} รูป)
                 </button>
               </div>` : ''}
 
-            ${BANNERS.length === 0 ? `
-              <div style="padding:28px 16px; text-align:center; background:var(--primary-50); border:1.5px dashed var(--border); border-radius:18px; margin-bottom:14px;">
-                <div style="font-size:13.5px; font-weight:700; color:var(--accent-text); margin-bottom:4px;">Home Carousel Banners</div>
-                <div style="font-size:12px; color:var(--muted);">ยังไม่มีรูปภาพสไลด์โปรโมท (แอดมินสามารถกดปุ่มด้านบนเพื่อเพิ่มรูปภาพได้)</div>
-              </div>
-            ` : `
             <div class="home-carousel-wrapper" style="margin-top:0;">
               <div class="carousel-track" id="carouselTrack">
-                ${BANNERS.map((b, idx) => `
+                ${slidesToRender.map((b, idx) => `
                   <div class="carousel-slide" data-idx="${idx}">
                     ${b.image
-                      ? `<img src="${escapeHTML(b.image)}" alt="Slide ${idx + 1}" style="width:100%; height:100%; object-fit:cover; display:block; user-select:none;" />`
-                      : `<div style="width:100%; height:100%; display:grid; place-items:center; background:var(--primary-50); color:var(--muted); font-size:13px; font-weight:700; user-select:none;"><div style="text-align:center;"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 4px; display:block; opacity:0.5;"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><div>Slide #${idx + 1}</div></div></div>`
+                      ? `<img src="${escapeHTML(b.image)}" alt="Slide ${idx + 1}" style="width:100%; height:100%; object-fit:cover; display:block; user-select:none;" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" /><div style="display:none; width:100%; height:100%; place-items:center; background:var(--primary-50); color:var(--accent-text);"><div style="text-align:center; padding:20px;"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 8px; display:block; opacity:0.6;"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><div style="font-size:13.5px; font-weight:700;">${escapeHTML(b.title || `Slide #${idx + 1}`)}</div></div></div>`
+                      : `<div style="width:100%; height:100%; display:grid; place-items:center; background:var(--primary-50); color:var(--accent-text);"><div style="text-align:center; padding:20px;"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 8px; display:block; opacity:0.6;"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><div style="font-size:13.5px; font-weight:700;">${escapeHTML(b.title || `Slide #${idx + 1}`)}</div>${b.sub ? `<div style="font-size:12px; color:var(--muted); margin-top:2px;">${escapeHTML(b.sub)}</div>` : ''}</div></div>`
                     }
                   </div>
                 `).join('')}
               </div>
 
-              ${BANNERS.length > 1 ? `
-                <button class="carousel-btn prev" id="cPrev" aria-label="Previous">‹</button>
-                <button class="carousel-btn next" id="cNext" aria-label="Next">›</button>
+              ${slidesToRender.length > 1 ? `
+                <button class="carousel-btn prev" id="cPrev" aria-label="Previous">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+                <button class="carousel-btn next" id="cNext" aria-label="Next">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
               ` : ''}
 
               <div class="carousel-dots" id="cDots">
-                ${BANNERS.map((_, i) => `<div class="carousel-dot ${i === 0 ? 'active' : ''}" data-idx="${i}"></div>`).join('')}
+                ${slidesToRender.map((_, i) => `<div class="carousel-dot ${i === 0 ? 'active' : ''}" data-idx="${i}"></div>`).join('')}
               </div>
             </div>
-            `}
           </div>
         `);
         view.appendChild(carouselEl);
@@ -8103,10 +9296,10 @@
           carouselEl.querySelector('#btnAdminEditBanners')?.addEventListener('click', openBannerManagerModal);
         }
 
-        // Carousel Logic (Manual Navigation Only - No Auto-play)
-        if (BANNERS.length > 0) {
+        // Carousel Logic
+        if (slidesToRender.length > 0) {
           let currentSlide = 0;
-          const totalSlides = BANNERS.length;
+          const totalSlides = slidesToRender.length;
           const track = carouselEl.querySelector('#carouselTrack');
           const dots = carouselEl.querySelectorAll('.carousel-dot');
 
@@ -8122,10 +9315,7 @@
 
           carouselEl.querySelector('#cPrev')?.addEventListener('click', (e) => { e.stopPropagation(); goToSlide(currentSlide - 1); });
           carouselEl.querySelector('#cNext')?.addEventListener('click', (e) => { e.stopPropagation(); goToSlide(currentSlide + 1); });
-
-          dots.forEach(d => {
-            d.addEventListener('click', (e) => { e.stopPropagation(); goToSlide(+d.dataset.idx); });
-          });
+          dots.forEach(d => d.addEventListener('click', (e) => { e.stopPropagation(); goToSlide(+d.dataset.idx); }));
         }
 
         // Click slide to open products
@@ -8138,20 +9328,41 @@
           });
         });
 
-        // 3. Compact Hero Banner (Dynamic from state.store - supports Image or Emoji)
+        // 3. Compact Hero Banner & 4 Highlights Grid (Image 2)
         const heroGraphicHtml = (state.store.heroIconType === 'image' && state.store.heroImage)
           ? `<img src="${escapeHTML(state.store.heroImage)}" alt="Hero" style="width:38px; height:38px; object-fit:contain; border-radius:10px; display:block;" onerror="this.style.display='none';" />`
-          : `<div style="font-size:28px;">${escapeHTML(state.store.heroEmoji || '')}</div>`;
+          : `<div style="width:34px; height:34px; border-radius:10px; background:var(--primary-100); display:grid; place-items:center; color:var(--accent-text);"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3c0 .8.3 1.5.8 2.1A5.5 5.5 0 0 0 4 12.5C4 15.5 6.5 18 9.5 18c.8 0 1.5-.2 2.1-.5.4.3.9.5 1.4.5a3 3 0 0 0 3-3c0-.8-.3-1.5-.8-2.1A5.5 5.5 0 0 0 20 7.5C20 4.5 17.5 2 14.5 2c-.8 0-1.5.2-2.1.5-.4-.3-.9-.5-1.4-.5Z"/><circle cx="12" cy="10" r="2"/></svg></div>`;
 
         const compactHero = el(`
-          <div class="store-hero">
-            <div style="flex:1;">
-              <h2 style="font-size:15.5px; font-weight:800;">${escapeHTML(state.store.heroTitle || 'Fresh from the oven, daily')}</h2>
-              <p style="font-size:12px; color:var(--muted); margin-top:2px;">${escapeHTML(state.store.heroSub || 'Handmade cakes, pastries, and rose-scented drinks.')}</p>
+          <div>
+            <div class="store-hero" style="margin-bottom:12px;">
+              <div style="flex:1;">
+                <h2 style="font-size:16px; font-weight:800; color:var(--text); margin:0 0 3px 0;">${escapeHTML(state.store.heroTitle || 'Fresh from the oven, daily')}</h2>
+                <p style="font-size:12px; color:var(--muted); margin:0;">${escapeHTML(state.store.heroSub || 'Handmade cakes, pastries, and rose-scented drinks.')}</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="btn btn-primary btn-sm" id="btnHeroShop" style="font-size:12px; padding:6px 14px; font-weight:700;">${escapeHTML(state.store.heroBtnText || `Shop Menu (${PRODUCTS.length} items)`)}</button>
+                ${heroGraphicHtml}
+              </div>
             </div>
-            <div class="flex items-center gap-2">
-              <button class="btn btn-primary btn-sm" id="btnHeroShop" style="font-size:12px; padding:6px 14px;">${escapeHTML(state.store.heroBtnText || 'Shop Menu (320 items)')}</button>
-              ${heroGraphicHtml}
+
+            <!-- 4 Highlights Grid (Image 2) -->
+            <div class="highlights-grid" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; margin-bottom:16px;">
+              ${[0, 1, 2, 3].map(i => {
+                const hl = (state.store.highlights && state.store.highlights[i]) || {};
+                const hasImg = hl.iconType === 'image' && hl.image;
+                return `
+                  <div class="card" style="margin:0; padding:14px; border:1.5px solid var(--border); border-radius:18px; background:var(--card); display:flex; align-items:center; justify-content:space-between; min-height:68px;">
+                    <div>
+                      <div style="font-size:13.5px; font-weight:800; color:var(--text);">${escapeHTML(hl.title || '')}</div>
+                      <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">${escapeHTML(hl.sub || '')}</div>
+                    </div>
+                    <div style="width:38px; height:38px; border-radius:12px; background:var(--primary-50); border:1px solid var(--border); display:grid; place-items:center; flex:none;">
+                      ${hasImg ? `<img src="${escapeHTML(hl.image)}" style="width:100%;height:100%;object-fit:contain;border-radius:12px;" />` : `<div style="width:12px; height:12px; border-radius:50%; background:var(--primary-200);"></div>`}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
             </div>
           </div>
         `);
@@ -8163,93 +9374,293 @@
           drawStore('products');
         });
 
-        // 4. 4 Highlights & Popular Picks (Dynamic from state.store - supports Image or Emoji)
-        const hList = (state.store.highlights && state.store.highlights.length) ? state.store.highlights : DEFAULT_STORE_CONFIG.highlights;
-        view.appendChild(el(`
-          <div class="grid stats" style="margin-top:16px">
-            ${hList.map(h => {
-              const iconHtml = (h.iconType === 'image' && h.image)
-                ? `<img src="${escapeHTML(h.image)}" alt="${escapeHTML(h.title)}" style="width:24px; height:24px; object-fit:contain; border-radius:6px; display:inline-block;" onerror="this.style.display='none';" />`
-                : `<span class="icon">${escapeHTML(h.icon || '')}</span>`;
-              return `
-                <div class="card stat">
-                  <div class="row"><span class="label">${escapeHTML(h.title)}</span>${iconHtml}</div>
-                  <div style="font-size:13px; color:var(--muted); margin-top:4px">${escapeHTML(h.sub)}</div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-          <div class="card" style="margin-top:16px">
-            <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-              <div>
-                <div class="card-title">${escapeHTML(state.store.popularTitle || 'Menu & Products')} (${PRODUCTS.length})</div>
-                <div class="card-sub">${escapeHTML(state.store.popularSub || 'เลือกชมและสั่งซื้อสินค้าขนมอบและเครื่องดื่มสดใหม่')}</div>
-              </div>
-              <button class="btn btn-primary btn-sm" id="btnHomeViewAllMenu" style="font-weight:700;">ดูเมนูทั้งหมด (${PRODUCTS.length} รายการ) →</button>
-            </div>
+        // 4. SERVICE SECTION A: วนเหรียญ (Coin Farming Showcase) - IF ENABLED
+        if (isCoinFarmActive) {
+          const boxes = state.store.coinFarmBoxes || [];
+          let activeBoxIdx = 0;
 
-            ${PRODUCTS.length > 0 ? `
-              <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:14px;" id="homeProductCardsGrid">
-                ${PRODUCTS.map(p => {
-                  const qty = state.selected[p.id] || 0;
-                  const imgUrl = p.image || DEFAULT_PRODUCT_IMG;
-                  const stockCls = p.stock === 0 ? 'out' : p.stock < 10 ? 'low' : '';
-                  return `
-                    <div class="card home-product-card ${stockCls}" data-id="${p.id}" style="padding:12px; border:1.5px solid var(--border); border-radius:16px; background:var(--card); display:flex; flex-direction:column; position:relative; cursor:pointer; margin:0;">
-                      <div style="position:relative; width:100%; aspect-ratio:1/1; border-radius:12px; overflow:hidden; background:var(--primary-50); border:1px solid var(--border); margin-bottom:10px;">
-                        <img src="${escapeHTML(imgUrl)}" alt="${escapeHTML(p.name)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='${DEFAULT_PRODUCT_IMG}';" />
-                        ${qty > 0 ? `<span class="qty-badge" style="display:flex; position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%; background:var(--primary-600); color:#fff; font-size:12px; font-weight:800; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.3);">${qty}</span>` : ''}
-                        ${p.stock === 0 ? `<div style="position:absolute; inset:0; background:rgba(0,0,0,0.55); color:#fff; display:grid; place-items:center; font-size:12px; font-weight:800;">สินค้าหมด</div>` : ''}
-                      </div>
-                      
-                      <div style="flex:1; display:flex; flex-direction:column;">
-                        <div style="font-size:11px; color:var(--muted); font-weight:700;">${escapeHTML(p.cat || 'Item')} · Lv.${p.level || 1}</div>
-                        <div style="font-weight:800; font-size:14px; color:var(--text); line-height:1.3; margin:2px 0 4px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${escapeHTML(p.name)}</div>
-                        ${p.flavor ? `<div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">${escapeHTML(p.flavor)}</div>` : ''}
+          const coinFarmSection = el(`
+            <div class="card" style="margin-top:16px;">
+              <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                <div>
+                  <div class="card-title">บริการวนเหรียญ (Coin Farming)</div>
+                  <div class="card-sub">ฟาร์มเหรียญรวดเร็ว ปลอดภัย มีหลายช่วงเลเวลให้เลือก</div>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" id="btnHomeGoCoinFarm" style="font-weight:700;">ดูแพ็กเกจทั้งหมด →</button>
+              </div>
+
+              ${boxes.length > 0 ? `
+                <!-- Level Boxes Selector Tabs -->
+                <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:12px;" id="homeCfBoxTabs">
+                  ${boxes.map((b, i) => `
+                    <button type="button" class="btn btn-sm ${i === 0 ? 'btn-primary' : 'btn-ghost'}" data-bidx="${i}" style="border-radius:10px; font-size:12px; font-weight:700; white-space:nowrap; border:1.5px solid var(--border);">
+                      ${escapeHTML(b.title)}
+                    </button>
+                  `).join('')}
+                </div>
+
+                <div id="homeCfTiersContainer" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:12px;"></div>
+              ` : `
+                <div style="padding:20px; text-align:center; color:var(--muted); background:var(--primary-50); border-radius:12px;">ยังไม่มีข้อมูลแพ็กเกจวนเหรียญในขณะนี้</div>
+              `}
+            </div>
+          `);
+          view.appendChild(coinFarmSection);
+
+          const renderHomeCfTiers = () => {
+            const container = coinFarmSection.querySelector('#homeCfTiersContainer');
+            if (!container) return;
+            const currentBox = boxes[activeBoxIdx];
+            if (!currentBox || !currentBox.tiers || !currentBox.tiers.length) {
+              container.innerHTML = `<div style="grid-column:1/-1; padding:16px; text-align:center; color:var(--muted);">ไม่มีแพ็กเกจในกล่องนี้</div>`;
+              return;
+            }
+            container.innerHTML = '';
+            currentBox.tiers.forEach(t => {
+              const cartKey = `cf_tier_${currentBox.id}_${t.id}`;
+              const qty = state.selected[cartKey] || 0;
+              const card = el(`
+                <div class="coin-tier-item ${qty > 0 ? 'selected' : ''}" style="display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:12px; border-radius:14px; background:var(--card);">
+                  <div class="flex items-center" style="justify-content:space-between;">
+                    <span style="font-weight:800; font-size:14.5px; color:var(--text);">${escapeHTML(t.coins)}</span>
+                    <span style="font-weight:900; font-size:16px; color:var(--accent-text);">${money(t.price)}</span>
+                  </div>
+                  <div style="font-size:11.5px; color:var(--muted); min-height:16px;">${escapeHTML(t.desc || currentBox.title)}</div>
+                  <button type="button" class="btn btn-sm btn-block ${qty > 0 ? 'btn-primary' : ''}" style="margin-top:4px; font-weight:700; font-size:12px; border-radius:8px;">
+                    ${qty > 0 ? `✓ ในตะกร้า (${qty})` : '+ สั่งซื้อ'}
+                  </button>
+                </div>
+              `);
+              card.addEventListener('click', () => {
+                state.selected[cartKey] = (state.selected[cartKey] || 0) + 1;
+                toast(`เพิ่ม "${t.coins}" ลงในตะกร้าแล้ว`, 'success');
+                updateFloatingCartBtn();
+                renderHomeCfTiers();
+              });
+              container.appendChild(card);
+            });
+          };
+
+          if (boxes.length > 0) {
+            renderHomeCfTiers();
+            coinFarmSection.querySelectorAll('#homeCfBoxTabs button').forEach(btn => {
+              btn.addEventListener('click', () => {
+                activeBoxIdx = +btn.dataset.bidx;
+                coinFarmSection.querySelectorAll('#homeCfBoxTabs button').forEach(b => {
+                  b.classList.remove('btn-primary');
+                  b.classList.add('btn-ghost');
+                });
+                btn.classList.add('btn-primary');
+                btn.classList.remove('btn-ghost');
+                renderHomeCfTiers();
+              });
+            });
+          }
+
+          coinFarmSection.querySelector('#btnHomeGoCoinFarm')?.addEventListener('click', () => {
+            state.storeProductSubTab = 'coin_farm';
+            root.querySelectorAll('#storeTabs .tab').forEach(x => x.classList.remove('active'));
+            root.querySelector('#storeTabs [data-s="products"]')?.classList.add('active');
+            drawStore('products');
+          });
+        }
+
+        // 5. SERVICE SECTION B: Item HayDay Popular Picks - IF ENABLED
+        if (isItemsActive) {
+          const itemsSection = el(`
+            <div class="card" style="margin-top:16px">
+              <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+                <div>
+                  <div class="card-title">${escapeHTML(state.store.popularTitle || 'Item HayDay')} (${PRODUCTS.length})</div>
+                  <div class="card-sub">${escapeHTML(state.store.popularSub || 'เลือกชมและสั่งซื้อสินค้าไอเทมและอุปกรณ์')}</div>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btnHomeViewAllMenu" style="font-weight:700;">ดูสินค้าทั้งหมด (${PRODUCTS.length} รายการ) →</button>
+              </div>
+
+              ${PRODUCTS.length > 0 ? `
+                <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:14px;" id="homeProductCardsGrid">
+                  ${PRODUCTS.slice(0, 12).map(p => {
+                    const qty = state.selected[p.id] || 0;
+                    const stockCls = p.stock === 0 ? 'out' : p.stock < 10 ? 'low' : '';
+                    return `
+                      <div class="card home-product-card ${stockCls}" data-id="${p.id}" style="padding:12px; border:1.5px solid var(--border); border-radius:16px; background:var(--card); display:flex; flex-direction:column; position:relative; cursor:pointer; margin:0;">
+                        <div style="position:relative; width:100%; aspect-ratio:1/1; border-radius:12px; overflow:hidden; background:var(--primary-50); border:1px solid var(--border); margin-bottom:10px;">
+                          ${renderMediaHtml(p.image, p.name)}
+                          ${qty > 0 ? `<span class="qty-badge" style="display:flex; position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%; background:var(--primary-600); color:#fff; font-size:12px; font-weight:800; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.3);">${qty}</span>` : ''}
+                          ${p.stock === 0 ? `<div style="position:absolute; inset:0; background:rgba(0,0,0,0.55); color:#fff; display:grid; place-items:center; font-size:12px; font-weight:800;">สินค้าหมด</div>` : ''}
+                        </div>
                         
-                        <div style="margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:6px; padding-top:8px; border-top:1px dashed var(--border);">
-                          <div style="font-weight:800; font-size:15px; color:var(--accent-text);">${money(p.price)}</div>
-                          <button type="button" class="btn btn-sm btn-home-add" data-id="${p.id}" style="padding:4px 10px; font-size:11.5px; font-weight:700; background:${qty > 0 ? 'var(--primary-600)' : 'var(--primary-50)'}; color:${qty > 0 ? '#fff' : 'var(--accent-text)'}; border:1px solid var(--border); border-radius:8px;">
-                            ${qty > 0 ? `✓ ในตะกร้า (${qty})` : '+ สั่งซื้อ'}
-                          </button>
+                        <div style="flex:1; display:flex; flex-direction:column;">
+                          <div style="font-size:11px; color:var(--muted); font-weight:700;">${escapeHTML(p.cat || 'Item')}</div>
+                          <div style="font-weight:800; font-size:14px; color:var(--text); line-height:1.3; margin:2px 0 4px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${escapeHTML(p.name)}</div>
+                          ${p.flavor ? `<div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">${escapeHTML(p.flavor)}</div>` : ''}
+                          
+                          <div style="margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:6px; padding-top:8px; border-top:1px dashed var(--border);">
+                            <div style="font-weight:800; font-size:15px; color:var(--accent-text);">${money(p.price)}</div>
+                            <button type="button" class="btn btn-sm btn-home-add" data-id="${p.id}" style="padding:4px 10px; font-size:11.5px; font-weight:700; background:${qty > 0 ? 'var(--primary-600)' : 'var(--primary-50)'}; color:${qty > 0 ? '#fff' : 'var(--accent-text)'}; border:1px solid var(--border); border-radius:8px;">
+                              ${qty > 0 ? `✓ ในตะกร้า (${qty})` : '+ สั่งซื้อ'}
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            ` : `
-              <div style="padding:32px 16px; text-align:center; background:var(--primary-50); border:1.5px dashed var(--border); border-radius:16px;">
-                <div style="font-weight:700; font-size:14px; color:var(--text); margin-bottom:4px;">ยังไม่มีสินค้าในขณะนี้</div>
-                <div style="font-size:12px; color:var(--muted);">เมื่อแอดมินสร้างสินค้าใหม่ สินค้าจะปรากฏที่หน้านี้โดยอัตโนมัติ</div>
-              </div>
-            `}
-          </div>
-        `));
+                    `;
+                  }).join('')}
+                </div>
+              ` : `
+                <div style="padding:32px 16px; text-align:center; background:var(--primary-50); border:1.5px dashed var(--border); border-radius:16px;">
+                  <div style="font-weight:700; font-size:14px; color:var(--text); margin-bottom:4px;">ยังไม่มีสินค้าในขณะนี้</div>
+                  <div style="font-size:12px; color:var(--muted);">เมื่อแอดมินสร้างสินค้าใหม่ สินค้าจะปรากฏที่หน้านี้โดยอัตโนมัติ</div>
+                </div>
+              `}
+            </div>
+          `);
+          view.appendChild(itemsSection);
 
-        // Attach listeners for Home products
-        view.querySelectorAll('.home-product-card').forEach(card => {
-          card.addEventListener('click', (e) => {
-            const pid = card.dataset.id;
-            const p = PRODUCTS.find(x => String(x.id) === String(pid));
-            if (!p) return;
-            if (p.stock === 0) return toast(`${p.name} สินค้าหมด`, 'error');
-            const rule = getProductPriceRule(p);
-            const clickStep = (rule && rule.stepQty) ? rule.stepQty : 1;
-            state.selected[p.id] = (state.selected[p.id] || 0) + clickStep;
-            toast(`เพิ่ม ${p.name} (+${clickStep}) ลงในตะกร้าแล้ว`, 'success');
-            updateFloatingCartBtn();
-            drawStore('home');
+          itemsSection.querySelectorAll('.home-product-card').forEach(card => {
+            card.addEventListener('click', () => {
+              const pid = card.dataset.id;
+              const p = PRODUCTS.find(x => String(x.id) === String(pid));
+              if (!p) return;
+              if (p.stock === 0) return toast(`${p.name} สินค้าหมด`, 'error');
+              const clickStep = getProductClickStep(p);
+              state.selected[p.id] = (state.selected[p.id] || 0) + clickStep;
+              toast(`เพิ่ม ${p.name} ลงในตะกร้าแล้ว`, 'success');
+              updateFloatingCartBtn();
+              drawStore('home');
+            });
           });
-        });
 
-        view.querySelector('#btnHomeViewAllMenu')?.addEventListener('click', () => {
-          root.querySelectorAll('#storeTabs .tab').forEach(x => x.classList.remove('active'));
-          root.querySelector('#storeTabs [data-s="products"]')?.classList.add('active');
-          drawStore('products');
-        });
+          itemsSection.querySelector('#btnHomeViewAllMenu')?.addEventListener('click', () => {
+            state.storeProductSubTab = 'items';
+            root.querySelectorAll('#storeTabs .tab').forEach(x => x.classList.remove('active'));
+            root.querySelector('#storeTabs [data-s="products"]')?.classList.add('active');
+            drawStore('products');
+          });
+        }
 
-        // 4. Customer Reviews & Ratings (Fourth Section on Home)
+        // 6. SERVICE SECTION C: ตลาดซื้อขายไอดีเกม (Game ID Showcase) - IF ENABLED
+        if (isGameIdsActive) {
+          const accs = state.store.gameAccounts || [];
+          const gameIdsSection = el(`
+            <div class="card" style="margin-top:16px;">
+              <div class="flex items-center" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+                <div>
+                  <div class="card-title">ตลาดซื้อขายไอดีเกม (Game ID Market) (${accs.length})</div>
+                  <div class="card-sub">ไอดีแท้ พร้อมส่งมอบ ปลอดภัย 100% ตรวจสอบได้</div>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" id="btnHomeGoGameIds" style="font-weight:700;">ดูไอดีทั้งหมด (${accs.length} รายการ) →</button>
+              </div>
+
+              ${accs.length > 0 ? `
+                <div class="game-id-grid">
+                  ${accs.map(acc => {
+                    const images = (acc.images && acc.images.length > 0) ? acc.images.filter(Boolean) : [];
+                    const cartKey = 'game_acc_' + acc.id;
+                    const inCart = !!state.selected[cartKey];
+                    return `
+                      <div class="game-id-card" data-accid="${acc.id}">
+                        <span class="game-id-badge ${acc.status || 'available'}">
+                          ${acc.status === 'sold' ? 'ขายแล้ว (Sold Out)' : acc.status === 'reserved' ? 'ติดจอง (Reserved)' : 'พร้อมส่งมอบ (Available)'}
+                        </span>
+
+                        <div class="game-id-gallery-wrap">
+                          <div class="game-id-gallery-track" id="h_track_${acc.id}">
+                            ${images.length > 0 ? images.map((img, i) => `
+                              <div class="game-id-gallery-slide">
+                                ${renderMediaHtml(img, `${acc.title} Photo ${i+1}`)}
+                              </div>
+                            `).join('') : `
+                              <div class="game-id-gallery-slide">
+                                ${renderMediaHtml('', acc.title)}
+                              </div>
+                            `}
+                          </div>
+
+                          ${images.length > 1 ? `
+                            <button type="button" class="game-id-gallery-btn prev btn-hg-prev" aria-label="Previous">
+                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                            </button>
+                            <button type="button" class="game-id-gallery-btn next btn-hg-next" aria-label="Next">
+                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                            </button>
+                            <div class="game-id-dots">
+                              ${images.map((_, i) => `<div class="game-id-dot ${i === 0 ? 'active' : ''}" data-idx="${i}"></div>`).join('')}
+                            </div>
+                          ` : ''}
+                        </div>
+
+                        <div style="flex:1; display:flex; flex-direction:column;">
+                          <div class="flex items-center gap-2" style="margin-bottom:4px;">
+                            <span class="badge" style="background:var(--primary-100); color:var(--accent-text); font-weight:800; font-size:11px;">${escapeHTML(acc.code)}</span>
+                            <span style="font-size:11px; color:var(--muted); margin-left:auto;">${images.length} รูป</span>
+                          </div>
+
+                          <div style="font-weight:800; font-size:14px; color:var(--text); line-height:1.3; margin-bottom:4px;">${escapeHTML(acc.title)}</div>
+                          ${acc.details ? `<div style="font-size:11.5px; color:var(--muted); margin-bottom:8px; line-height:1.4; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${escapeHTML(acc.details)}</div>` : ''}
+
+                          <div style="margin-top:auto; padding-top:10px; border-top:1.5px dashed var(--border); display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                            <div style="font-weight:900; font-size:16px; color:var(--accent-text);">${money(acc.price)}</div>
+                            <div class="flex gap-1">
+                              <button type="button" class="btn btn-sm btn-ghost btn-quick-view" style="font-size:11.5px; padding:4px 8px; font-weight:700;">ดูรูป/รายละเอียด</button>
+                              ${acc.status === 'available' ? `
+                                <button type="button" class="btn btn-sm ${inCart ? 'btn-primary' : ''} btn-buy-game-id" style="font-size:11.5px; padding:4px 10px; font-weight:700;">
+                                  ${inCart ? '✓ ในตะกร้า' : '+ สั่งซื้อ'}
+                                </button>
+                              ` : ''}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              ` : `
+                <div style="padding:24px; text-align:center; color:var(--muted); background:var(--primary-50); border-radius:12px;">ยังไม่มีไอดีเกมในขณะนี้</div>
+              `}
+            </div>
+          `);
+          view.appendChild(gameIdsSection);
+
+          // Slider logic on Home
+          gameIdsSection.querySelectorAll('.game-id-card').forEach(card => {
+            const accId = card.dataset.accid;
+            const acc = accs.find(a => a.id === accId);
+            if (!acc) return;
+            const images = (acc.images && acc.images.length > 0) ? acc.images.filter(Boolean) : [];
+            let currentSlide = 0;
+
+            if (images.length > 1) {
+              const track = card.querySelector(`#h_track_${acc.id}`);
+              const dots = card.querySelectorAll('.game-id-dot');
+              const updateSlide = (i) => {
+                currentSlide = (i + images.length) % images.length;
+                if (track) track.style.transform = `translateX(-${currentSlide * 100}%)`;
+                dots.forEach((d, dIdx) => d.classList.toggle('active', dIdx === currentSlide));
+              };
+              card.querySelector('.btn-hg-prev')?.addEventListener('click', (e) => { e.stopPropagation(); updateSlide(currentSlide - 1); });
+              card.querySelector('.btn-hg-next')?.addEventListener('click', (e) => { e.stopPropagation(); updateSlide(currentSlide + 1); });
+              dots.forEach(d => d.addEventListener('click', (e) => { e.stopPropagation(); updateSlide(+d.dataset.idx); }));
+            }
+
+            card.querySelector('.btn-quick-view')?.addEventListener('click', () => openGameAccountQuickViewModal(acc));
+            card.querySelector('.btn-buy-game-id')?.addEventListener('click', () => {
+              const cartKey = 'game_acc_' + acc.id;
+              state.selected[cartKey] = 1;
+              toast(`เพิ่มไอดี "${acc.code}" ลงในตะกร้าแล้ว`, 'success');
+              updateFloatingCartBtn();
+              drawStore('home');
+            });
+          });
+
+          gameIdsSection.querySelector('#btnHomeGoGameIds')?.addEventListener('click', () => {
+            state.storeProductSubTab = 'game_ids';
+            root.querySelectorAll('#storeTabs .tab').forEach(x => x.classList.remove('active'));
+            root.querySelector('#storeTabs [data-s="products"]')?.classList.add('active');
+            drawStore('products');
+          });
+        }
+
+        // 7. Customer Reviews & Ratings
         const sortedHomeReviews = [...REVIEWS].sort((a, b) => {
           if (a.pinned && !b.pinned) return -1;
           if (!a.pinned && b.pinned) return 1;
@@ -8310,7 +9721,6 @@
               </div>
             ` : `
               <div class="empty" style="padding: 24px; text-align: center; color: var(--muted); background: var(--primary-50); border-radius: 12px; border: 1px dashed var(--border);">
-                <div style="font-size: 28px; margin-bottom: 6px;"></div>
                 <div style="font-weight: 700; font-size: 13.5px; color: var(--text);">ยังไม่มีรีวิวในขณะนี้</div>
                 <div style="font-size: 12px; margin-top: 2px;">เมื่อลูกค้าสั่งซื้อสินค้า สามารถเป็นคนแรกที่เขียนรีวิวให้ร้านค้าได้เลย!</div>
               </div>
@@ -8318,292 +9728,464 @@
           </div>
         `);
         view.appendChild(reviewsSection);
-
         reviewsSection.querySelector('#btnHomeWriteReview')?.addEventListener('click', () => openWriteReviewModal());
 
       } else if (key === 'products') {
-        const selectedCats = new Set();
-        const selectedLevels = new Set();
-        const levelOptions = (state.store.levelRanges && state.store.levelRanges.length) ? state.store.levelRanges : DEFAULT_STORE_CONFIG.levelRanges;
+        // Multi-Product Storefront View with Service Switcher
+        const enabledCount = (isItemsActive ? 1 : 0) + (isCoinFarmActive ? 1 : 0) + (isGameIdsActive ? 1 : 0);
+        
+        // Auto-fix sub-tab if current is disabled
+        if (state.storeProductSubTab === 'items' && !isItemsActive) {
+          state.storeProductSubTab = isCoinFarmActive ? 'coin_farm' : 'game_ids';
+        } else if (state.storeProductSubTab === 'coin_farm' && !isCoinFarmActive) {
+          state.storeProductSubTab = isItemsActive ? 'items' : 'game_ids';
+        } else if (state.storeProductSubTab === 'game_ids' && !isGameIdsActive) {
+          state.storeProductSubTab = isItemsActive ? 'items' : 'coin_farm';
+        }
 
         const wrap = el(`
-          <div class="card">
-            <div class="flex items-center" style="justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px">
-              <div><div class="card-title">Menu &amp; Products</div><div class="card-sub">Tap item to add to cart</div></div>
-              <div class="flex gap-2" style="flex-wrap:wrap; align-items:center;">
-                <div class="search-wrap" style="max-width:180px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" stroke-linecap="round"/></svg><input placeholder="Search..." id="storeSearch"/></div>
-
-                <!-- White-Pink Multi-Dropdown for Categories -->
-                <div class="multi-dropdown-wrap" id="multiCatWrap">
-                  <div class="multi-dropdown-trigger" id="multiCatTrigger">
-                    <span id="multiCatLabel">All categories</span>
-                    <span class="arrow-icon">▼</span>
-                  </div>
-                  <div class="multi-dropdown-menu" id="multiCatMenu">
-                    <div class="multi-dropdown-item" data-cat="__ALL__">
-                      <span class="circle-checkbox checked" id="chkCatAll">✓</span>
-                      <span>เลือกทั้งหมด (All categories)</span>
-                    </div>
-                    ${CATEGORIES.map(c => `
-                      <div class="multi-dropdown-item" data-cat="${escapeHTML(c.name)}">
-                        <span class="circle-checkbox checked" data-cat-chk="${escapeHTML(c.name)}">✓</span>
-                        <span>${escapeHTML(c.name)}</span>
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
-
-                <!-- White-Pink Multi-Dropdown for Level -->
-                <div class="multi-dropdown-wrap" id="multiLevelWrap">
-                  <div class="multi-dropdown-trigger" id="multiLevelTrigger">
-                    <span id="multiLevelLabel">All Levels</span>
-                    <span class="arrow-icon">▼</span>
-                  </div>
-                  <div class="multi-dropdown-menu" id="multiLevelMenu">
-                    <div class="multi-dropdown-item" data-level="__ALL__">
-                      <span class="circle-checkbox checked" id="chkLevelAll">✓</span>
-                      <span>ทุกเลเวล (All Levels)</span>
-                    </div>
-                    ${levelOptions.map(l => `
-                      <div class="multi-dropdown-item" data-level="${escapeHTML(l)}">
-                        <span class="circle-checkbox checked" data-level-chk="${escapeHTML(l)}">✓</span>
-                        <span>${escapeHTML(l)}</span>
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
+          <div>
+            ${enabledCount > 1 ? `
+              <!-- Multi-Service Switcher Navigation Bar -->
+              <div class="product-hub-nav" id="storeSubNav">
+                ${isItemsActive ? `
+                  <button type="button" class="hub-tab-btn ${state.storeProductSubTab === 'items' ? 'active' : ''}" data-sub="items">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                    <span>${escapeHTML(state.store.itemsTabTitle ? state.store.itemsTabTitle.replace(/^\d+\.\s*/, '') : 'Item HayDay')}</span>
+                  </button>
+                ` : ''}
+                ${isCoinFarmActive ? `
+                  <button type="button" class="hub-tab-btn ${state.storeProductSubTab === 'coin_farm' ? 'active' : ''}" data-sub="coin_farm">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9h-4a1.5 1.5 0 0 0 0 3h3a1.5 1.5 0 0 1 0 3h-4"/><path d="M12 7v10"/></svg>
+                    <span>${escapeHTML(state.store.coinFarmTabTitle ? state.store.coinFarmTabTitle.replace(/^\d+\.\s*/, '') : 'วนเหรียญ (Coin Farming)')}</span>
+                  </button>
+                ` : ''}
+                ${isGameIdsActive ? `
+                  <button type="button" class="hub-tab-btn ${state.storeProductSubTab === 'game_ids' ? 'active' : ''}" data-sub="game_ids">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="15" x="2" y="5" rx="3"/><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01"/></svg>
+                    <span>${escapeHTML(state.store.gameIdsTabTitle ? state.store.gameIdsTabTitle.replace(/^\d+\.\s*/, '') : 'ID Game (ไอดีเกม)')}</span>
+                  </button>
+                ` : ''}
               </div>
-            </div>
-            <div class="flex items-center" style="justify-content:space-between; margin-bottom:10px; color:var(--muted); font-size:12.5px">
-              <span id="storeCount"></span>
-              <span id="storeCartInfo" style="cursor:pointer;" title="Go to Cart"></span>
-            </div>
-            <div class="product-grid" id="storeGrid"></div>
-            <div class="pagination" id="storePager"></div>
+            ` : ''}
+
+            <div id="storeProductsContent"></div>
           </div>
         `);
         view.appendChild(wrap);
 
-        const grid = wrap.querySelector('#storeGrid');
-        const pager = wrap.querySelector('#storePager');
-        const countEl = wrap.querySelector('#storeCount');
-        const cartInfo = wrap.querySelector('#storeCartInfo');
-        const searchEl = wrap.querySelector('#storeSearch');
-        const catTrigger = wrap.querySelector('#multiCatTrigger');
-        const catMenu = wrap.querySelector('#multiCatMenu');
-        const catLabel = wrap.querySelector('#multiCatLabel');
-        const levelTrigger = wrap.querySelector('#multiLevelTrigger');
-        const levelMenu = wrap.querySelector('#multiLevelMenu');
-        const levelLabel = wrap.querySelector('#multiLevelLabel');
-
-        const PAGE = 160;
-        let page = 1;
-
-        // Multi-dropdown toggle handlers
-        catTrigger.addEventListener('click', (e) => {
-          e.stopPropagation();
-          levelMenu.classList.remove('show');
-          levelTrigger.classList.remove('active');
-          catMenu.classList.toggle('show');
-          catTrigger.classList.toggle('active');
-        });
-
-        levelTrigger.addEventListener('click', (e) => {
-          e.stopPropagation();
-          catMenu.classList.remove('show');
-          catTrigger.classList.remove('active');
-          levelMenu.classList.toggle('show');
-          levelTrigger.classList.toggle('active');
-        });
-
-        const closeAllDropdowns = () => {
-          catMenu.classList.remove('show');
-          catTrigger.classList.remove('active');
-          levelMenu.classList.remove('show');
-          levelTrigger.classList.remove('active');
-        };
-        document.addEventListener('click', closeAllDropdowns);
-        catMenu.addEventListener('click', (e) => e.stopPropagation());
-        levelMenu.addEventListener('click', (e) => e.stopPropagation());
-
-        // Category multi-select handler
-        catMenu.querySelectorAll('.multi-dropdown-item').forEach(item => {
-          item.addEventListener('click', () => {
-            const cat = item.dataset.cat;
-            if (cat === '__ALL__') {
-              selectedCats.clear();
-              catMenu.querySelectorAll('[data-cat-chk]').forEach(c => c.classList.add('checked'));
-              wrap.querySelector('#chkCatAll').classList.add('checked');
-              catLabel.textContent = 'All categories';
-            } else {
-              if (selectedCats.has(cat)) {
-                selectedCats.delete(cat);
-                item.querySelector('.circle-checkbox')?.classList.remove('checked');
-              } else {
-                selectedCats.add(cat);
-                item.querySelector('.circle-checkbox')?.classList.add('checked');
-              }
-              const allChecked = selectedCats.size === 0 || selectedCats.size === CATEGORIES.length;
-              wrap.querySelector('#chkCatAll').classList.toggle('checked', allChecked);
-              if (selectedCats.size === 0) {
-                catLabel.textContent = 'All categories';
-              } else if (selectedCats.size === 1) {
-                catLabel.textContent = Array.from(selectedCats)[0];
-              } else {
-                catLabel.textContent = `หมวดหมู่ (${selectedCats.size})`;
-              }
-            }
-            page = 1;
-            drawStoreGrid();
+        wrap.querySelectorAll('#storeSubNav .hub-tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.storeProductSubTab = btn.dataset.sub;
+            wrap.querySelectorAll('#storeSubNav .hub-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+            renderSubContent();
           });
         });
 
-        // Level multi-select handler
-        levelMenu.querySelectorAll('.multi-dropdown-item').forEach(item => {
-          item.addEventListener('click', () => {
-            const lvl = item.dataset.level;
-            if (lvl === '__ALL__') {
-              selectedLevels.clear();
-              levelMenu.querySelectorAll('[data-level-chk]').forEach(c => c.classList.add('checked'));
-              wrap.querySelector('#chkLevelAll').classList.add('checked');
-              levelLabel.textContent = 'All Levels';
-            } else {
-              if (selectedLevels.has(lvl)) {
-                selectedLevels.delete(lvl);
-                item.querySelector('.circle-checkbox')?.classList.remove('checked');
-              } else {
-                selectedLevels.add(lvl);
-                item.querySelector('.circle-checkbox')?.classList.add('checked');
-              }
-              const allChecked = selectedLevels.size === 0 || selectedLevels.size === levelOptions.length;
-              wrap.querySelector('#chkLevelAll').classList.toggle('checked', allChecked);
-              if (selectedLevels.size === 0) {
-                levelLabel.textContent = 'All Levels';
-              } else if (selectedLevels.size === 1) {
-                levelLabel.textContent = Array.from(selectedLevels)[0];
-              } else {
-                levelLabel.textContent = `เลเวล (${selectedLevels.size})`;
-              }
-            }
-            page = 1;
-            drawStoreGrid();
-          });
-        });
+        function renderSubContent() {
+          const contentContainer = wrap.querySelector('#storeProductsContent');
+          if (!contentContainer) return;
+          contentContainer.innerHTML = '';
 
-        function matchesLevelRange(level, rangeStr) {
-          const n = Number(level || 1);
-          const m = String(rangeStr).match(/(\d+)\s*-\s*(\d+)/);
-          if (m) return n >= parseInt(m[1], 10) && n <= parseInt(m[2], 10);
-          const mPlus = String(rangeStr).match(/(\d+)\+/);
-          if (mPlus) return n >= parseInt(mPlus[1], 10);
-          const mExact = String(rangeStr).match(/(\d+)/);
-          if (mExact) return n === parseInt(mExact[1], 10);
-          return true;
-        }
-
-        function updateCartInfo() {
-          const totalQty = Object.values(state.selected).reduce((a, b) => a + Number(b || 0), 0);
-          const totalPrice = Object.entries(state.selected).reduce((sum, [id, q]) => {
-            const p = PRODUCTS.find(x => String(x.id) === String(id));
-            return sum + (p ? getItemPrice(p, q) : 0);
-          }, 0);
-          cartInfo.innerHTML = totalQty
-            ? `Cart: <strong style="color:var(--text)">${totalQty}</strong> items · <strong style="color:var(--accent-text)">${money(totalPrice)}</strong> (Go to Cart →)`
-            : 'Cart is empty';
-        }
-        cartInfo.addEventListener('click', () => {
-          closeAllDropdowns();
-          root.querySelectorAll('#storeTabs .tab').forEach(x => x.classList.remove('active'));
-          root.querySelector('#storeTabs [data-s="cart"]')?.classList.add('active');
-          drawStore('cart');
-        });
-
-        function drawStoreGrid() {
-          const q = searchEl.value.toLowerCase().trim();
-          const list = PRODUCTS.filter(p => {
-            const matchesSearch = !q || p.name.toLowerCase().includes(q) || (p.cat && p.cat.toLowerCase().includes(q));
-            const matchesCat = selectedCats.size === 0 || selectedCats.has(p.cat);
-            const matchesLevel = selectedLevels.size === 0 || Array.from(selectedLevels).some(rng => matchesLevelRange(p.level || 1, rng));
-            return matchesSearch && matchesCat && matchesLevel;
-          });
-          const totalPages = Math.max(1, Math.ceil(list.length / PAGE));
-          if (page > totalPages) page = totalPages;
-          const start = (page - 1) * PAGE;
-          const items = list.slice(start, start + PAGE);
-          countEl.textContent = list.length
-            ? `Showing ${start + 1}–${Math.min(list.length, start + PAGE)} of ${list.length} products`
-            : 'No products';
-          grid.innerHTML = '';
-
-          items.forEach(p => {
-            const sInfo = getStockStatusInfo(p.stock);
-            const stockCls = sInfo.dotClass;
-            const qty = state.selected[p.id] || 0;
-            const imgUrl = p.image || DEFAULT_PRODUCT_IMG;
-            const mediaHtml = `<img src="${escapeHTML(imgUrl)}" alt="${escapeHTML(p.name)}" onerror="this.src='${DEFAULT_PRODUCT_IMG}';" />`;
-            const rule = getProductPriceRule(p);
-            const ruleTiers = rule?.tiers || [];
-
-            const tile = el(`
-              <div class="product-tile ${stockCls} ${qty ? 'selected' : ''}" data-id="${p.id}" title="${escapeHTML(p.name)} · Lv.${p.level || 1} · ${money(p.price)}">
-                ${mediaHtml}
-                <span class="stock-dot"></span>
-                <span class="qty-badge">${qty}</span>
+          if (state.storeProductSubTab === 'items' && isItemsActive) {
+            // ITEM HAYDAY CATALOG
+            const itemBox = el(`
+              <div class="card">
+                <div class="flex items-center" style="justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px">
+                  <div>
+                    <div class="card-title">Menu &amp; Products</div>
+                    <div class="card-sub">Tap item to add to cart</div>
+                  </div>
+                  <div class="flex gap-2" style="flex-wrap:wrap; align-items:center;">
+                    <div class="search-wrap" style="min-width:180px; max-width:260px; border-radius:24px;">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" stroke-linecap="round"/></svg>
+                      <input placeholder="Search..." id="storeSearch"/>
+                    </div>
+                    <div id="storeCatDropdownSlot"></div>
+                    <div id="storeLevelDropdownSlot"></div>
+                    <button type="button" class="btn btn-sm btn-ghost" id="btnStoreResetFilters" style="padding:7px 14px; font-weight:700; border:1.5px solid var(--border); border-radius:20px;">
+                      Reset
+                    </button>
+                  </div>
+                </div>
+                <div class="flex items-center" style="justify-content:space-between; margin-bottom:10px; color:var(--muted); font-size:12.5px">
+                  <span id="storeCount"></span>
+                  <span id="storeCartInfo" style="cursor:pointer;" title="Go to Cart"></span>
+                </div>
+                <div class="product-grid" id="storeGrid"></div>
+                <div class="pagination" id="storePager"></div>
               </div>
             `);
+            contentContainer.appendChild(itemBox);
 
-            // Tile Click to increment
-            tile.addEventListener('click', (e) => {
-              if (p.stock === 0) return toast(`${p.name} is out of stock`, 'error');
-              const clickStep = (rule && rule.stepQty) ? rule.stepQty : 1;
-              state.selected[p.id] = (state.selected[p.id] || 0) + clickStep;
-              tile.classList.add('selected');
-              const badge = tile.querySelector('.qty-badge');
-              if (badge) badge.textContent = state.selected[p.id];
-              updateCartInfo();
-              updateFloatingCartBtn();
+            const grid = itemBox.querySelector('#storeGrid');
+            const pager = itemBox.querySelector('#storePager');
+            const countEl = itemBox.querySelector('#storeCount');
+            const cartInfo = itemBox.querySelector('#storeCartInfo');
+            const searchEl = itemBox.querySelector('#storeSearch');
+            const btnReset = itemBox.querySelector('#btnStoreResetFilters');
+            const PAGE = 160;
+            let page = 1;
+            let selectedCats = [];
+            let selectedLvls = [];
+
+            // Custom Multi-Dropdown for Categories
+            const catOptions = CATEGORIES.map(c => ({ value: c.name, label: c.name }));
+            const catDropdown = createMultiDropdown({
+              buttonLabel: 'All categories',
+              entityName: 'หมวดหมู่',
+              options: catOptions,
+              selectedValues: selectedCats,
+              onSelect: (vals) => {
+                selectedCats = vals;
+                page = 1;
+                drawStoreGrid();
+              }
+            });
+            itemBox.querySelector('#storeCatDropdownSlot')?.appendChild(catDropdown.element);
+
+            // Custom Multi-Dropdown for Levels (Matching Image 3)
+            const levelOptions = [
+              { value: '1-20', label: 'Lv. 1 - 20' },
+              { value: '21-40', label: 'Lv. 21 - 40' },
+              { value: '41-60', label: 'Lv. 41 - 60' },
+              { value: '61-80', label: 'Lv. 61 - 80' },
+              { value: '81-100+', label: 'Lv. 81 - 100+' }
+            ];
+            const levelDropdown = createMultiDropdown({
+              buttonLabel: 'All Levels',
+              entityName: 'เลเวล',
+              options: levelOptions,
+              selectedValues: selectedLvls,
+              onSelect: (vals) => {
+                selectedLvls = vals;
+                page = 1;
+                drawStoreGrid();
+              }
+            });
+            itemBox.querySelector('#storeLevelDropdownSlot')?.appendChild(levelDropdown.element);
+
+            btnReset.addEventListener('click', () => {
+              searchEl.value = '';
+              selectedCats = [];
+              selectedLvls = [];
+              catDropdown.setValues([]);
+              levelDropdown.setValues([]);
+              page = 1;
+              drawStoreGrid();
+              toast('ล้างค่าตัวกรองเรียบร้อยแล้ว', 'info');
             });
 
-            tile.addEventListener('contextmenu', (e) => {
-              e.preventDefault();
-              if (!state.selected[p.id]) return;
-              state.selected[p.id] -= 1;
-              if (state.selected[p.id] <= 0) {
-                delete state.selected[p.id];
-                tile.classList.remove('selected');
-              } else {
-                tile.querySelector('.qty-badge').textContent = state.selected[p.id];
+            function updateCartInfo() {
+              const totalQty = Object.values(state.selected).reduce((a,b)=>a+Number(b||0), 0);
+              const totalPrice = Object.entries(state.selected).reduce((sum, [id, q]) => {
+                return sum + calculateCartItemPrice(id, q);
+              }, 0);
+              cartInfo.innerHTML = totalQty
+                ? `Cart: <strong style="color:var(--text)">${totalQty}</strong> items · <strong style="color:var(--accent-text)">${money(totalPrice)}</strong> (Go to Cart →)`
+                : 'Cart is empty';
+            }
+            cartInfo.addEventListener('click', () => {
+              root.querySelectorAll('#storeTabs .tab').forEach(x => x.classList.remove('active'));
+              root.querySelector('#storeTabs [data-s="cart"]')?.classList.add('active');
+              drawStore('cart');
+            });
+
+            function drawStoreGrid() {
+              const q = searchEl.value.toLowerCase().trim();
+
+              const list = PRODUCTS.filter(p => {
+                if (q && !p.name.toLowerCase().includes(q) && !(p.cat || '').toLowerCase().includes(q)) return false;
+                if (selectedCats.length > 0 && !selectedCats.includes(p.cat)) return false;
+                if (selectedLvls.length > 0) {
+                  const pLevel = Number(p.level) || 1;
+                  const match = selectedLvls.some(lvl => {
+                    if (lvl === '1-20') return pLevel >= 1 && pLevel <= 20;
+                    if (lvl === '21-40') return pLevel >= 21 && pLevel <= 40;
+                    if (lvl === '41-60') return pLevel >= 41 && pLevel <= 60;
+                    if (lvl === '61-80') return pLevel >= 61 && pLevel <= 80;
+                    if (lvl === '81-100+' || lvl === '81+') return pLevel >= 81;
+                    return false;
+                  });
+                  if (!match) return false;
+                }
+                return true;
+              });
+
+              const totalPages = Math.max(1, Math.ceil(list.length / PAGE));
+              if (page > totalPages) page = totalPages;
+              const start = (page - 1) * PAGE;
+              const items = list.slice(start, start + PAGE);
+              countEl.textContent = list.length
+                ? `Showing ${start + 1}–${Math.min(list.length, start + PAGE)} of ${list.length} products`
+                : 'No products';
+              grid.innerHTML = '';
+
+              const ratio = Number(state.store?.priceRatio) || 1.0;
+
+              items.forEach(p => {
+                const sInfo = getStockStatusInfo(p.stock);
+                const stockCls = sInfo.dotClass;
+                const qty = state.selected[p.id] || 0;
+                const effectivePrice = Math.round(Number(p.price || 0) * ratio * 100) / 100;
+                const step = getProductClickStep(p);
+                const mediaHtml = renderMediaHtml(p.image, p.name);
+                const tile = el(`
+                  <div class="product-tile ${stockCls} ${qty ? 'selected' : ''}" data-id="${p.id}" title="${escapeHTML(p.name)} · ${money(effectivePrice)} (Lv.${p.level || 1}, สเต็ปคลิกละ ${step} ชิ้น)">
+                    ${mediaHtml}
+                    <span class="stock-dot"></span>
+                    <span class="qty-badge">${qty}</span>
+                  </div>
+                `);
+                tile.addEventListener('click', () => {
+                  if (p.stock === 0) return toast(`${p.name} is out of stock`, 'error');
+                  const clickStep = getProductClickStep(p);
+                  state.selected[p.id] = (state.selected[p.id] || 0) + clickStep;
+                  tile.classList.add('selected');
+                  const badge = tile.querySelector('.qty-badge');
+                  badge.textContent = state.selected[p.id];
+                  badge.style.animation = 'none'; void badge.offsetWidth; badge.style.animation = '';
+                  updateCartInfo();
+                  updateFloatingCartBtn();
+                });
+                tile.addEventListener('contextmenu', (e) => {
+                  e.preventDefault();
+                  if (!state.selected[p.id]) return;
+                  const clickStep = getProductClickStep(p);
+                  state.selected[p.id] -= clickStep;
+                  if (state.selected[p.id] <= 0) {
+                    delete state.selected[p.id];
+                    tile.classList.remove('selected');
+                  } else {
+                    tile.querySelector('.qty-badge').textContent = state.selected[p.id];
+                  }
+                  updateCartInfo();
+                  updateFloatingCartBtn();
+                });
+                grid.appendChild(tile);
+              });
+
+              if (!list.length) grid.appendChild(el(`<div class="card empty" style="grid-column: 1/-1"><div class="icon">${ICONS.products}</div>No products match your filters.</div>`));
+
+              pager.innerHTML = '';
+              if (totalPages > 1) {
+                const mkBtn = (label, pNum, opts = {}) => {
+                  const b = el(`<button class="pg ${opts.active ? 'active' : ''}" ${opts.disabled ? 'disabled style="opacity:.4;cursor:not-allowed"' : ''}>${label}</button>`);
+                  if (!opts.disabled) b.addEventListener('click', () => { page = pNum; drawStoreGrid(); });
+                  return b;
+                };
+                pager.appendChild(mkBtn(`<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="m15 18-6-6 6-6"/></svg>`, page - 1, { disabled: page === 1 }));
+                for (let i = 1; i <= totalPages; i++) pager.appendChild(mkBtn(String(i), i, { active: i === page }));
+                pager.appendChild(mkBtn(`<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="m9 18 6-6-6-6"/></svg>`, page + 1, { disabled: page === totalPages }));
               }
               updateCartInfo();
-              updateFloatingCartBtn();
-            });
-            grid.appendChild(tile);
-          });
+            }
 
-          pager.innerHTML = '';
-          if (totalPages > 1) {
-            const mk = (label, p2, opts={}) => {
-              const b = el(`<button class="pg ${opts.active?'active':''}" ${opts.disabled?'disabled style="opacity:.4;cursor:not-allowed"':''}>${label}</button>`);
-              if (!opts.disabled) b.addEventListener('click', () => { page = p2; drawStoreGrid(); });
-              return b;
+            searchEl.addEventListener('input', () => { page = 1; drawStoreGrid(); });
+            drawStoreGrid();
+            updateCartInfo();
+
+          } else if (state.storeProductSubTab === 'coin_farm' && isCoinFarmActive) {
+            // COIN FARMING STOREFRONT VIEW
+            const boxes = state.store.coinFarmBoxes || [];
+            let activeBIdx = 0;
+
+            const cfBox = el(`
+              <div class="card">
+                <div class="card-title">บริการวนเหรียญ (Coin Farming Packages)</div>
+                <div class="card-sub" style="margin-bottom:14px;">เลือกช่วงเลเวลฟาร์ม และเลือกแพ็กเกจจำนวนเหรียญที่ต้องการ</div>
+
+                ${boxes.length > 0 ? `
+                  <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px;" id="storeCfBoxTabs">
+                    ${boxes.map((b, i) => `
+                      <button type="button" class="btn ${i === 0 ? 'btn-primary' : 'btn-ghost'}" data-bidx="${i}" style="border-radius:12px; font-weight:800; font-size:13px; white-space:nowrap; border:1.5px solid var(--border);">
+                        ${escapeHTML(b.title)}
+                      </button>
+                    `).join('')}
+                  </div>
+
+                  <div id="storeCfTiersGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px;"></div>
+                ` : `
+                  <div class="empty">ยังไม่มีแพ็กเกจวนเหรียญในขณะนี้</div>
+                `}
+              </div>
+            `);
+            contentContainer.appendChild(cfBox);
+
+            const renderStoreCfTiers = () => {
+              const container = cfBox.querySelector('#storeCfTiersGrid');
+              if (!container) return;
+              const box = boxes[activeBIdx];
+              if (!box || !box.tiers || !box.tiers.length) {
+                container.innerHTML = `<div style="grid-column:1/-1; padding:20px; text-align:center; color:var(--muted);">ไม่มีรายการเรทเหรียญในกล่องนี้</div>`;
+                return;
+              }
+              container.innerHTML = '';
+              box.tiers.forEach((t, tIdx) => {
+                const cartKey = `cf_tier_${box.id}_${t.id}`;
+                const qty = state.selected[cartKey] || 0;
+                const card = el(`
+                  <div class="coin-farm-box ${qty > 0 ? 'selected' : ''}" style="cursor:pointer; border-radius:16px;">
+                    <div class="flex items-center" style="justify-content:space-between;">
+                      <span class="badge" style="background:var(--primary-100); color:var(--accent-text); font-weight:800;">#${tIdx + 1} แพ็กเกจ</span>
+                      <span style="font-weight:900; font-size:18px; color:var(--accent-text);">${money(t.price)}</span>
+                    </div>
+                    <div style="margin:4px 0;">
+                      <div style="font-size:16px; font-weight:800; color:var(--text);">${escapeHTML(t.coins)}</div>
+                      <div style="font-size:12px; color:var(--muted); margin-top:2px;">${escapeHTML(t.desc || box.title)}</div>
+                    </div>
+                    <button type="button" class="btn btn-sm ${qty > 0 ? 'btn-primary' : ''} btn-block" style="margin-top:auto; font-weight:800; font-size:12.5px; border-radius:10px;">
+                      ${qty > 0 ? `✓ ในตะกร้า (${qty})` : '+ สั่งซื้อแพ็กเกจนี้'}
+                    </button>
+                  </div>
+                `);
+                card.addEventListener('click', () => {
+                  state.selected[cartKey] = (state.selected[cartKey] || 0) + 1;
+                  toast(`เพิ่ม "${t.coins}" ลงในตะกร้าแล้ว`, 'success');
+                  updateFloatingCartBtn();
+                  renderStoreCfTiers();
+                });
+                container.appendChild(card);
+              });
             };
-            pager.appendChild(mk('‹', page-1, {disabled: page===1}));
-            for (let i=1; i<=totalPages; i++) pager.appendChild(mk(String(i), i, {active: i===page}));
-            pager.appendChild(mk('›', page+1, {disabled: page===totalPages}));
+
+            if (boxes.length > 0) {
+              renderStoreCfTiers();
+              cfBox.querySelectorAll('#storeCfBoxTabs button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                  activeBIdx = +btn.dataset.bidx;
+                  cfBox.querySelectorAll('#storeCfBoxTabs button').forEach(b => {
+                    b.classList.remove('btn-primary');
+                    b.classList.add('btn-ghost');
+                  });
+                  btn.classList.add('btn-primary');
+                  btn.classList.remove('btn-ghost');
+                  renderStoreCfTiers();
+                });
+              });
+            }
+
+          } else if (state.storeProductSubTab === 'game_ids' && isGameIdsActive) {
+            // GAME ID MARKET STOREFRONT VIEW
+            const accs = state.store.gameAccounts || [];
+            const gaBox = el(`
+              <div class="card">
+                <div class="card-title">ตลาดซื้อขายไอดีเกม (Game Accounts Market)</div>
+                <div class="card-sub" style="margin-bottom:14px;">ไอดีเกมแท้ ปลอดภัย คลิกที่รูปเพื่อเลื่อนดูหลายมุมมอง หรือกด "ดูรายละเอียด" เพื่ออ่านข้อมูลเพิ่มเติม</div>
+
+                ${accs.length > 0 ? `
+                  <div class="game-id-grid" id="storeGameIdsGrid"></div>
+                ` : `
+                  <div class="empty">ยังไม่มีไอดีเกมในขณะนี้</div>
+                `}
+              </div>
+            `);
+            contentContainer.appendChild(gaBox);
+
+            const gridEl = gaBox.querySelector('#storeGameIdsGrid');
+            if (gridEl) {
+              accs.forEach(acc => {
+                const images = (acc.images && acc.images.length > 0) ? acc.images.filter(Boolean) : [];
+                const cartKey = 'game_acc_' + acc.id;
+                const inCart = !!state.selected[cartKey];
+                let currentSlide = 0;
+
+                const card = el(`
+                  <div class="game-id-card">
+                    <span class="game-id-badge ${acc.status || 'available'}">
+                      ${acc.status === 'sold' ? 'ขายแล้ว (Sold Out)' : acc.status === 'reserved' ? 'ติดจอง (Reserved)' : 'พร้อมส่งมอบ (Available)'}
+                    </span>
+
+                    <div class="game-id-gallery-wrap">
+                      <div class="game-id-gallery-track" id="p_track_${acc.id}">
+                        ${images.length > 0 ? images.map((img, i) => `
+                          <div class="game-id-gallery-slide">
+                            ${renderMediaHtml(img, `${acc.title} Photo ${i+1}`)}
+                          </div>
+                        `).join('') : `
+                          <div class="game-id-gallery-slide">
+                            ${renderMediaHtml('', acc.title)}
+                          </div>
+                        `}
+                      </div>
+
+                      ${images.length > 1 ? `
+                        <button type="button" class="game-id-gallery-btn prev btn-pg-prev" aria-label="Previous">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                        </button>
+                        <button type="button" class="game-id-gallery-btn next btn-pg-next" aria-label="Next">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
+                        <div class="game-id-dots">
+                          ${images.map((_, i) => `<div class="game-id-dot ${i === 0 ? 'active' : ''}" data-idx="${i}"></div>`).join('')}
+                        </div>
+                      ` : ''}
+                    </div>
+
+                    <div style="flex:1; display:flex; flex-direction:column;">
+                      <div class="flex items-center gap-2" style="margin-bottom:4px;">
+                        <span class="badge" style="background:var(--primary-100); color:var(--accent-text); font-weight:800; font-size:11px;">${escapeHTML(acc.code)}</span>
+                        <span style="font-size:11px; color:var(--muted); margin-left:auto;">${images.length} รูป</span>
+                      </div>
+
+                      <div style="font-weight:800; font-size:14px; color:var(--text); line-height:1.3; margin-bottom:4px;">${escapeHTML(acc.title)}</div>
+                      ${acc.details ? `<div style="font-size:11.5px; color:var(--muted); margin-bottom:8px; line-height:1.4; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${escapeHTML(acc.details)}</div>` : ''}
+
+                      <div style="margin-top:auto; padding-top:10px; border-top:1.5px dashed var(--border); display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                        <div style="font-weight:900; font-size:16px; color:var(--accent-text);">${money(acc.price)}</div>
+                        <div class="flex gap-1">
+                          <button type="button" class="btn btn-sm btn-ghost btn-quick-view" style="font-size:11.5px; padding:4px 8px; font-weight:700;">ดูรายละเอียด</button>
+                          ${acc.status === 'available' ? `
+                            <button type="button" class="btn btn-sm ${inCart ? 'btn-primary' : ''} btn-buy-game-id" style="font-size:11.5px; padding:4px 10px; font-weight:700;">
+                              ${inCart ? '✓ ในตะกร้า' : '+ สั่งซื้อ'}
+                            </button>
+                          ` : ''}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                `);
+
+                // Slider logic
+                if (images.length > 1) {
+                  const track = card.querySelector(`#p_track_${acc.id}`);
+                  const dots = card.querySelectorAll('.game-id-dot');
+                  const updateSlide = (i) => {
+                    currentSlide = (i + images.length) % images.length;
+                    if (track) track.style.transform = `translateX(-${currentSlide * 100}%)`;
+                    dots.forEach((d, dIdx) => d.classList.toggle('active', dIdx === currentSlide));
+                  };
+                  card.querySelector('.btn-pg-prev')?.addEventListener('click', (e) => { e.stopPropagation(); updateSlide(currentSlide - 1); });
+                  card.querySelector('.btn-pg-next')?.addEventListener('click', (e) => { e.stopPropagation(); updateSlide(currentSlide + 1); });
+                  dots.forEach(d => d.addEventListener('click', (e) => { e.stopPropagation(); updateSlide(+d.dataset.idx); }));
+                }
+
+                card.querySelector('.btn-quick-view')?.addEventListener('click', () => openGameAccountQuickViewModal(acc));
+                card.querySelector('.btn-buy-game-id')?.addEventListener('click', () => {
+                  state.selected[cartKey] = 1;
+                  toast(`เพิ่มไอดี "${acc.code}" ลงในตะกร้าแล้ว`, 'success');
+                  updateFloatingCartBtn();
+                  renderSubContent();
+                });
+
+                gridEl.appendChild(card);
+              });
+            }
           }
         }
 
-        searchEl.addEventListener('input', () => { page = 1; drawStoreGrid(); });
-        drawStoreGrid();
-        updateCartInfo();
+        renderSubContent();
 
       } else if (key === 'cart') {
+        // UNIVERSAL CART VIEW
         const cartEntries = Object.entries(state.selected).map(([id, q]) => {
-          const p = PRODUCTS.find(x => String(x.id) === String(id));
-          return p ? { ...p, qty: q } : null;
+          const it = getCartItemDetails(id);
+          if (!it) return null;
+          const lineTotal = calculateCartItemPrice(id, q);
+          return { ...it, qty: q, lineTotal };
         }).filter(Boolean);
 
-        const subtotal = cartEntries.reduce((s, i) => s + getItemPrice(i, i.qty), 0);
+        const subtotal = cartEntries.reduce((s, i) => s + i.lineTotal, 0);
         const discount = calculatePromoDiscount(state.appliedPromo, subtotal);
         const total = Math.max(0, subtotal - discount);
         const activePromos = PROMOTIONS.filter(p => p.status === 'active');
@@ -8617,30 +10199,37 @@
                 ${cartEntries.length === 0 ? '<div class="empty">Your cart is empty.</div>' : `
                   <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px">
                     ${cartEntries.map(p => {
-                      const thumbHtml = p.image
-                        ? `<img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" style="width:52px;height:52px;object-fit:cover;border-radius:12px;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='grid';" /><div style="display:none;width:52px;height:52px;place-items:center;font-size:12px;font-weight:700;border-radius:12px;background:var(--primary-50);color:var(--accent-text);">${escapeHTML(p.cat || 'Item')}</div>`
-                        : `<div style="width:52px;height:52px;display:grid;place-items:center;font-size:12px;font-weight:700;border-radius:12px;background:var(--primary-50);color:var(--accent-text);">${escapeHTML(p.cat || 'Item')}</div>`;
-                      const linePrice = getItemPrice(p, p.qty);
+                      const thumbHtml = (p.type === 'coin_farm' || (p.name && p.name.includes('วนเหรียญ')))
+                        ? `<div style="width:52px; height:52px; border-radius:12px; background:var(--primary-50); border:1.5px solid var(--border); display:grid; place-items:center; color:var(--accent-text); flex:none;">
+                            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <circle cx="8" cy="8" r="6"/>
+                              <path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>
+                              <path d="M7 6h2v4H7zm10 4h2v4h-2z"/>
+                            </svg>
+                          </div>`
+                        : (p.image
+                          ? `<img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" style="width:52px;height:52px;object-fit:cover;border-radius:12px;flex:none;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='grid';" /><div style="display:none;width:52px;height:52px;place-items:center;font-size:11px;font-weight:700;border-radius:12px;background:var(--primary-50);color:var(--accent-text);flex:none;">${escapeHTML(p.cat || 'Item')}</div>`
+                          : `<div style="width:52px;height:52px;display:grid;place-items:center;font-size:11px;font-weight:700;border-radius:12px;background:var(--primary-50);color:var(--accent-text);flex:none;">${escapeHTML(p.cat || 'Item')}</div>`);
                       return `
                         <div class="flex items-center gap-3" style="padding:10px; border:1px solid var(--border); border-radius:12px">
                           ${thumbHtml}
                           <div style="flex:1">
-                            <div style="font-weight:600">${escapeHTML(p.name)}</div>
-                            <div style="font-size:12px; color:var(--muted)">${escapeHTML(p.cat || '')} · Lv.${p.level || 1} · ${money(p.price)}/ea</div>
+                            <div style="font-weight:700; font-size:13.5px;">${escapeHTML(p.name)}</div>
+                            <div style="font-size:12px; color:var(--muted)">${escapeHTML(p.cat)} · ${money(p.qty > 0 ? (p.lineTotal / p.qty) : p.price)}/ชิ้น</div>
                           </div>
                           <div class="flex items-center gap-2">
                             <button class="btn btn-sm btn-cart-minus" data-id="${p.id}">−</button>
-                            <span style="font-weight:600; min-width:20px; text-align:center;">${p.qty}</span>
-                            <button class="btn btn-sm btn-cart-plus" data-id="${p.id}">+</button>
+                            <span style="font-weight:700">${p.qty}</span>
+                            ${p.type !== 'game_account' ? `<button class="btn btn-sm btn-cart-plus" data-id="${p.id}">+</button>` : ''}
                           </div>
-                          <div style="font-weight:700; width:75px; text-align:right; color:var(--accent-text);">${money(linePrice)}</div>
+                          <div style="font-weight:800; width:80px; text-align:right; color:var(--accent-text);">${money(p.lineTotal)}</div>
                         </div>`;
                     }).join('')}
                   </div>
                 `}
               </div>
 
-              <!-- Promo Code Section in Cart -->
+              <!-- Promo Code / Coupon Section in Cart -->
               ${cartEntries.length > 0 ? `
                 <div class="card" style="margin-top:14px;">
                   <div class="card-title" style="font-size:14.5px;">
@@ -8666,6 +10255,7 @@
                     </div>
                   ` : ''}
 
+                  <!-- Active Promotion Quick Tags -->
                   <div style="margin-top:12px;">
                     <div style="font-size:11.5px; font-weight:700; color:var(--muted); margin-bottom:6px;">โปรโมชั่นแนะนำ (คลิกเพื่อใช้โค้ด):</div>
                     <div style="display:flex; flex-wrap:wrap; gap:6px;">
@@ -8692,12 +10282,14 @@
         `);
         view.appendChild(cartWrap);
 
-        // Cart item plus / minus listeners
+        // Cart item plus / minus event listeners
         cartWrap.querySelectorAll('.btn-cart-minus').forEach(btn => {
           btn.addEventListener('click', () => {
             const pid = btn.dataset.id;
             if (state.selected[pid]) {
-              state.selected[pid]--;
+              const p = PRODUCTS.find(x => String(x.id) === String(pid));
+              const step = p ? getProductClickStep(p) : 1;
+              state.selected[pid] -= step;
               if (state.selected[pid] <= 0) delete state.selected[pid];
               drawStore('cart');
               updateFloatingCartBtn();
@@ -8707,7 +10299,9 @@
         cartWrap.querySelectorAll('.btn-cart-plus').forEach(btn => {
           btn.addEventListener('click', () => {
             const pid = btn.dataset.id;
-            state.selected[pid] = (state.selected[pid] || 0) + 1;
+            const p = PRODUCTS.find(x => String(x.id) === String(pid));
+            const step = p ? getProductClickStep(p) : 1;
+            state.selected[pid] = (state.selected[pid] || 0) + step;
             drawStore('cart');
             updateFloatingCartBtn();
           });
@@ -8720,7 +10314,10 @@
 
         const doApplyPromoCode = (rawCode) => {
           const code = (rawCode || '').trim().toUpperCase();
-          if (!code) return toast('โปรดกรอกรหัสโค้ดส่วนลด', 'error');
+          if (!code) {
+            toast('โปรดกรอกรหัสโค้ดส่วนลด', 'error');
+            return;
+          }
           const matched = PROMOTIONS.find(p => p.code.toUpperCase() === code && p.status === 'active')
             || PROMOTIONS.find(p => p.code.toUpperCase() === code);
           if (matched) {
@@ -8733,8 +10330,18 @@
         };
 
         btnApply?.addEventListener('click', () => doApplyPromoCode(promoInput?.value));
-        promoInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doApplyPromoCode(promoInput?.value); } });
-        btnRemove?.addEventListener('click', () => { state.appliedPromo = null; toast('ยกเลิกโค้ดส่วนลดแล้ว', 'info'); drawStore('cart'); });
+        promoInput?.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            doApplyPromoCode(promoInput?.value);
+          }
+        });
+
+        btnRemove?.addEventListener('click', () => {
+          state.appliedPromo = null;
+          toast('ยกเลิกโค้ดส่วนลดแล้ว', 'info');
+          drawStore('cart');
+        });
 
         cartWrap.querySelectorAll('.btn-promo-tag').forEach(tag => {
           tag.addEventListener('click', () => {
@@ -8752,10 +10359,12 @@
         }
       } else if (key === 'checkout') {
         const cartEntries = Object.entries(state.selected).map(([id, q]) => {
-          const p = PRODUCTS.find(x => String(x.id) === String(id));
-          return p ? { ...p, qty: q } : null;
+          const it = getCartItemDetails(id);
+          if (!it) return null;
+          const lineTotal = calculateCartItemPrice(id, q);
+          return { ...it, qty: q, lineTotal };
         }).filter(Boolean);
-        const subtotal = cartEntries.reduce((s, i) => s + getItemPrice(i, i.qty), 0);
+        const subtotal = cartEntries.reduce((s, i) => s + i.lineTotal, 0);
         const discount = calculatePromoDiscount(state.appliedPromo, subtotal);
         const total = Math.max(0, subtotal - discount);
 
@@ -8791,15 +10400,15 @@
               <div class="card-title">Payment Transfer</div>
               <div class="card-sub">สแกน QR หรือโอนผ่านบัญชีธนาคาร/วอลเล็ท</div>
               
-              <!-- 1:1 Large QR Code Preview (Requirement 6) -->
-              <div class="checkout-qr-box" title="สแกนจ่ายเงินผ่าน PromptPay QR">
+              <!-- QR Code Preview -->
+              <div class="file-preview" style="aspect-ratio:auto; padding:14px; margin-top:8px; text-align:center; background:var(--card); border:1.5px solid var(--border); border-radius:14px;">
                 ${state.store.qr_image_url
-                  ? `<img src="${escapeHTML(state.store.qr_image_url)}" alt="PromptPay QR" onerror="this.style.display='none';" />`
-                  : `<div class="qr" style="width:160px; height:160px; margin:auto;"></div>`}
+                  ? `<img src="${escapeHTML(state.store.qr_image_url)}" alt="PromptPay QR" style="width:140px; height:140px; object-fit:contain; border-radius:10px; margin:0 auto 6px; display:block; box-shadow:var(--shadow-soft);" onerror="this.style.display='none';" />`
+                  : `<div class="qr" style="width:90px; height:90px; margin:0 auto 6px;"></div>`}
+                <div style="font-size:12px; font-weight:800; color:var(--accent-text);">PromptPay QR Code (สแกนจ่ายเงิน)</div>
               </div>
-              <div style="font-size:12.5px; font-weight:800; color:var(--accent-text); text-align:center; margin-bottom:10px;">PromptPay QR Code (สแกนจ่ายเงิน)</div>
 
-              <!-- Bank & Wallet Transfer Details -->
+              <!-- Bank & Wallet Transfer Details with Copy Buttons (Dynamic List from Settings) -->
               <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
                 ${(state.store.payment_accounts && state.store.payment_accounts.length > 0 ? state.store.payment_accounts : DEFAULT_STORE_CONFIG.payment_accounts).map(acc => {
                   const accIconHtml = acc.image
@@ -8849,7 +10458,7 @@
           </div>
         `));
 
-        // Preserve input fields
+        // Preserve input fields real-time
         const coNameEl = view.querySelector('#coName');
         const coFarmNameEl = view.querySelector('#coFarmName');
         const coFarmTagEl = view.querySelector('#coFarmTag');
@@ -8935,48 +10544,38 @@
         });
 
         view.querySelector('#confirmPay').addEventListener('click', async () => {
-          const name = coNameEl?.value.trim() || 'Guest Customer';
-          const farmName = coFarmNameEl?.value.trim() || '';
-          const farmTag = coFarmTagEl?.value.trim() || '';
-          const contact = coContactEl?.value.trim() || '';
-
-          if (!contact) {
-            toast('กรุณากรอกช่องทางการติดต่อ (เบอร์โทร หรือ Line ID)', 'error');
-            coContactEl?.focus();
-            return;
-          }
+          // Check if slip is attached
           if (!uploadedSlipData) {
             slipDropzone.style.borderColor = 'var(--danger)';
             slipDropzone.style.background = '#FFF0F2';
             slipDropzone.style.animation = 'pinShake .35s ease';
             setTimeout(() => { slipDropzone.style.animation = ''; }, 400);
-            toast('กรุณาแนบสลิปหลักฐานการโอนเงินก่อนยืนยันคำสั่งซื้อ', 'error');
+            toast('เช็คเอาท์ไม่ได้: โปรดแนบสลิปหลักฐานการโอนเงินก่อนสั่งซื้อ', 'error');
             slipDropzone.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
           }
 
-          const selectedItemsList = Object.entries(state.selected).map(([id, q]) => {
-            const p = PRODUCTS.find(x => String(x.id) === String(id));
-            if (!p) return null;
-            const linePrice = getItemPrice(p, q);
+          const name = $('#coName')?.value.trim() || 'Anna Wong';
+          const farmName = $('#coFarmName')?.value.trim() || '';
+          const farmTag = $('#coFarmTag')?.value.trim() || '';
+          const contact = $('#coContact')?.value.trim() || '';
+          const newOrderNumber = 'HP-' + Date.now().toString().slice(-6) + '-' + Math.floor(100 + Math.random()*900);
+
+          const selectedItemsList = Object.entries(state.selected).map(([pid, q]) => {
+            const it = getCartItemDetails(pid);
             return {
-              id: p.id,
-              name: p.name,
-              cat: p.cat,
-              level: p.level || 1,
-              price: Number(p.price || 0),
+              id: pid,
+              name: it ? it.name : 'Product',
+              price: Number(it ? it.price : 0),
               qty: Number(q),
-              subtotal: linePrice,
-              image: p.image || ''
+              subtotal: Number((it ? it.price : 0) * Number(q)),
+              image: it ? (it.image || '') : '',
+              cat: it ? (it.cat || 'Item') : 'Item',
+              type: it ? it.type : 'item',
+              rawId: it ? it.rawId : pid
             };
-          }).filter(Boolean);
+          });
 
-          if (!selectedItemsList.length) {
-            toast('ไม่มีสินค้าในตะกร้า', 'error');
-            return;
-          }
-
-          const newOrderNumber = 'HP-' + Date.now().toString().slice(-6) + '-' + Math.floor(100 + Math.random() * 900);
           const totalItemsCount = selectedItemsList.reduce((sum, it) => sum + it.qty, 0);
 
           const newOrder = {
@@ -8986,35 +10585,35 @@
             farm_tag: farmTag,
             contact: contact,
             date: new Date().toISOString().split('T')[0],
-            time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-            items: totalItemsCount,
+            items: totalItemsCount || 1,
             items_data: selectedItemsList,
-            subtotal: Number(subtotal),
-            discount: Number(discount),
-            promo_code: state.appliedPromo?.code || null,
+            subtotal: subtotal,
+            discount: discount,
+            promo_code: state.appliedPromo ? state.appliedPromo.code : '',
             delivery: 0,
             total: Number(total),
             status: 'waiting',
-            slip_url: uploadedSlipData
+            slip_url: uploadedSlipData || ''
           };
-
           ORDERS.unshift(newOrder);
           persistOrders();
 
-          // Reset checkout form
+          // Reset checkout form state
           state.checkoutForm = { name: '', farmName: '', farmTag: '', contact: '', uploadedSlipData: '' };
 
-          // Customer Record
-          const custEmail = contact.includes('@') ? contact : `${name.toLowerCase().replace(/\s+/g, '') || 'guest'}@hayfarm.com`;
-          const custPhone = contact.replace(/\D/g, '').length >= 9 ? contact : '';
-          let currentCustObj = CUSTOMERS.find(c => c.name.toLowerCase() === name.toLowerCase());
-          if (currentCustObj) {
-            currentCustObj.orders = (currentCustObj.orders || 1) + 1;
-            currentCustObj.spend = (currentCustObj.spend || 0) + Number(total);
-            if (farmName) currentCustObj.address = [farmName, farmTag].filter(Boolean).join(' · ');
+          // Update Customer records locally
+          const custEmail = (contact && contact.includes('@')) ? contact : `${(name || 'customer').toLowerCase().replace(/\s+/g, '')}@customer.com`;
+          const custPhone = (contact && !contact.includes('@')) ? contact : '';
+          const cIdx = CUSTOMERS.findIndex(c => c.name.toLowerCase() === name.toLowerCase() || (custEmail && c.email.toLowerCase() === custEmail.toLowerCase()));
+          let currentCustObj = null;
+          if (cIdx !== -1) {
+            CUSTOMERS[cIdx].orders = (CUSTOMERS[cIdx].orders || 0) + 1;
+            CUSTOMERS[cIdx].spend = (CUSTOMERS[cIdx].spend || 0) + Number(total);
+            if (farmName && !CUSTOMERS[cIdx].address) CUSTOMERS[cIdx].address = farmName;
+            if (farmTag && !CUSTOMERS[cIdx].tag) CUSTOMERS[cIdx].tag = farmTag;
+            currentCustObj = CUSTOMERS[cIdx];
           } else {
             currentCustObj = {
-              id: 'CUST-' + (CUSTOMERS.length + 1).toString().padStart(3, '0'),
               name: name,
               email: custEmail,
               phone: custPhone,
@@ -9026,8 +10625,10 @@
             CUSTOMERS.unshift(currentCustObj);
           }
           persistCustomers();
+
           notifyNewOrder(newOrder);
 
+          // 1. Instant Real-time WebSocket Broadcast to Admin and all connected devices
           if (syncChannel) {
             try {
               syncChannel.send({
@@ -9035,9 +10636,12 @@
                 event: 'new_order',
                 payload: { order: newOrder, customer: currentCustObj }
               });
-            } catch (e) {}
+            } catch (e) {
+              console.warn('Sync broadcast new_order notice:', e);
+            }
           }
 
+          // 2. Persist to Supabase Database table 'customers', 'orders' & 'order_items'
           if (supabase) {
             try {
               let customerDbId = null;
@@ -9050,8 +10654,12 @@
                   address: farmName || null,
                   tag: (farmTag && ['VIP', 'Regular', 'New'].includes(farmTag)) ? farmTag : 'New'
                 }).select().single();
-                if (custData) customerDbId = custData.id;
-              } catch (e) {}
+                if (custData) {
+                  customerDbId = custData.id;
+                }
+              } catch (e) {
+                console.warn('Customer Supabase insert notice:', e);
+              }
 
               const noteMeta = `Customer: ${name} | Farm: ${farmName} | Tag: ${farmTag} | Contact: ${contact} | Promo: ${state.appliedPromo?.code || '-'} | Slip: ${uploadedSlipData || ''}`;
               const { data: insertedOrder, error: ordErr } = await supabase.from('orders').insert({
@@ -9079,29 +10687,47 @@
                 if (itemRows.length > 0) {
                   await supabase.from('order_items').insert(itemRows);
                 }
+              } else if (ordErr) {
+                console.warn('Supabase order insert error:', ordErr);
               }
-            } catch (dbErr) {}
+            } catch (dbErr) {
+              console.warn('Supabase orders table insert notice:', dbErr);
+            }
           }
 
+          // 3. Deduct stock for items or mark game account as sold
           selectedItemsList.forEach(it => {
-            const p = PRODUCTS.find(x => String(x.id) === String(it.id));
-            if (p) {
-              p.stock = Math.max(0, Number(p.stock || 0) - Number(it.qty || 1));
+            if (it.type === 'item') {
+              const p = PRODUCTS.find(x => String(x.id) === String(it.id));
+              if (p) {
+                p.stock = Math.max(0, Number(p.stock || 0) - Number(it.qty || 1));
+              }
+            } else if (it.type === 'game_account') {
+              const acc = (state.store.gameAccounts || []).find(a => String(a.id) === String(it.rawId));
+              if (acc) {
+                acc.status = 'sold';
+              }
             }
           });
+          syncStoreSettingsAcrossDevices();
           updateStockNotifications();
 
           if (supabase) {
             try {
               for (const it of selectedItemsList) {
-                const p = PRODUCTS.find(x => String(x.id) === String(it.id));
-                if (p && !String(p.id).startsWith('prod_') && p.id.length === 36) {
-                  await supabase.from('products').update({ stock: p.stock }).eq('id', p.id);
+                if (it.type === 'item') {
+                  const p = PRODUCTS.find(x => String(x.id) === String(it.id));
+                  if (p && !String(p.id).startsWith('prod_') && p.id.length === 36) {
+                    await supabase.from('products').update({ stock: p.stock }).eq('id', p.id);
+                  }
                 }
               }
-            } catch (stkErr) {}
+            } catch (stkErr) {
+              console.warn('Supabase stock update notice:', stkErr);
+            }
           }
 
+          // 4. Real-time broadcast stock deduction to all other connected devices
           if (syncChannel) {
             try {
               syncChannel.send({
@@ -9121,12 +10747,12 @@
           drawStore('receipt');
         });
       } else if (key === 'receipt') {
-        const latestOrder = (state.lastOrderId && ORDERS.find(x => String(x.id) === String(state.lastOrderId))) || ORDERS[0] || { id: 'HP-1042', customer: 'Anna Wong', farm_name: 'BNC Hay Farm', farm_tag: '#FARM-01', date: new Date().toISOString().split('T')[0], total: 35.30, subtotal: 35.30, discount: 0, delivery: 0, items_data: [] };
+        const latestOrder = (state.lastOrderId && ORDERS.find(x => String(x.id) === String(state.lastOrderId))) || ORDERS[0] || { id: 'HP-1042', customer: 'Anna Wong', farm_name: 'BNC Hay Farm', farm_tag: '#FARM-01', date: new Date().toISOString().split('T')[0], total: 35.30, subtotal: 35.30, discount: 0, delivery: 0 };
         const logoType = state.store.receiptLogoType || 'emoji';
         const logoImage = state.store.receiptLogoImage || '';
         const logoEmoji = state.store.receiptLogoEmoji || 'B';
-        const storeName = state.store.receiptStoreName || (state.store.name ? state.store.name + ' Bakery' : 'BNC HayMate Bakery');
-        const storeSub = state.store.receiptStoreAddress || '14 Sukhumvit Rd · Bangkok';
+        const storeName = state.store.receiptStoreName || (state.store.name ? state.store.name : 'BNC HayMate');
+        const storeSub = state.store.receiptStoreAddress || '';
 
         const footerType = state.store.receiptFooterType || 'qr';
         const footerImage = state.store.receiptFooterImage || '';
@@ -9149,134 +10775,99 @@
 
         const rSubtotal = latestOrder.subtotal !== undefined ? latestOrder.subtotal : latestOrder.total;
         const rDiscount = latestOrder.discount || 0;
-        const orderItemsList = (latestOrder.items_data && latestOrder.items_data.length > 0)
-          ? latestOrder.items_data
-          : (latestOrder.items && Array.isArray(latestOrder.items))
-            ? latestOrder.items
-            : PRODUCTS.slice(0, 3).map((p, i) => ({ name: p.name, qty: i + 1, price: p.price, total: getItemPrice(p, i + 1) }));
 
         view.appendChild(el(`
-          <div style="max-width:400px; margin:0 auto;">
-            <!-- Receipt Printable & Capturable Card (Requirement 2) -->
-            <div class="receipt" id="receiptPrintArea" style="padding:24px 22px; background:var(--card); border:1.5px solid var(--border); border-radius:20px; box-shadow:var(--shadow-soft);">
-              <div class="r-head">
-                <div class="r-logo">${logoHtml}</div>
-                <div class="r-store">${escapeHTML(storeName)}</div>
-                <div class="r-sub">${escapeHTML(storeSub)}</div>
-              </div>
-              <div class="r-line"></div>
-              <div class="r-items">
-                <div class="r-row"><span>Order ID</span><span><strong>${latestOrder.id}</strong></span></div>
-                <div class="r-row"><span>Date</span><span>${latestOrder.date}</span></div>
-                <div class="r-row"><span>Customer</span><span>${escapeHTML(latestOrder.customer)}</span></div>
-                ${latestOrder.farm_name ? `<div class="r-row"><span>Farm</span><span>${escapeHTML(latestOrder.farm_name)}</span></div>` : ''}
-                ${latestOrder.farm_tag ? `<div class="r-row"><span>Farm Tag</span><span>${escapeHTML(latestOrder.farm_tag)}</span></div>` : ''}
-                ${latestOrder.contact ? `<div class="r-row"><span>Contact</span><span>${escapeHTML(latestOrder.contact)}</span></div>` : ''}
-              </div>
-              <div class="r-line"></div>
-              <div class="r-items">
-                ${orderItemsList.map(it => `
-                  <div class="r-row">
-                    <span>${escapeHTML(it.name || it.product_name || 'Item')} × ${it.qty || it.quantity || 1}</span>
-                    <span>${money(it.total || it.subtotal || (it.price * it.qty) || 0)}</span>
-                  </div>
-                `).join('')}
-              </div>
-              <div class="r-line"></div>
-              <div class="r-items">
-                <div class="r-row"><span>Subtotal</span><span>${money(rSubtotal)}</span></div>
-                ${rDiscount > 0 ? `<div class="r-row" style="color:var(--accent-text); font-weight:700;"><span>Discount (${escapeHTML(latestOrder.promo_code || 'Promo')})</span><span style="color:var(--danger)">-${money(rDiscount)}</span></div>` : ''}
-                <div class="r-row r-total" style="font-size:17px; font-weight:800; color:var(--accent-text); margin-top:4px;"><span>Total</span><span>${money(latestOrder.total)}</span></div>
-              </div>
-              ${footerGraphicHtml}
-              <div style="text-align:center; font-family:'Sunshiney', cursive; font-size:22px; font-weight:700; color:var(--accent-text); margin-top:8px; line-height:1.2;">${escapeHTML(footerMsg)}</div>
-              ${footerSub ? `<div style="text-align:center; font-size:12px; color:var(--muted); margin-top:4px; font-weight:500; line-height:1.3;">${escapeHTML(footerSub)}</div>` : ''}
+          <div class="receipt">
+            <div class="r-head">
+              <div class="r-logo">${logoHtml}</div>
+              <div class="r-store">${escapeHTML(storeName)}</div>
+              ${storeSub ? `<div class="r-sub">${escapeHTML(storeSub)}</div>` : ''}
             </div>
-
-            <!-- Receipt Actions Outside Printable Area -->
-            <div style="margin-top:14px;">
-              <button class="btn btn-primary btn-block" id="btnTrackOrder" style="font-size:14px; font-weight:700; padding:10px;">Track your order (ติดตามสถานะคำสั่งซื้อ) →</button>
-              <button class="btn btn-block mt-2" id="dlReceipt" style="font-size:13.5px; font-weight:700; background:var(--card); border:1.5px solid var(--border); padding:10px;">💾 บันทึกรูปภาพใบเสร็จ (Save Image)</button>
-              <button class="btn btn-block mt-2" id="btnPrintReceipt" style="font-size:12.5px; font-weight:600; padding:8px;">🖨️ พิมพ์ใบเสร็จ (Print / PDF)</button>
+            <div class="r-line"></div>
+            <div class="r-items">
+              <div class="r-row"><span>Order</span><span><strong>${latestOrder.id}</strong></span></div>
+              <div class="r-row"><span>Date</span><span>${latestOrder.date}</span></div>
+              <div class="r-row"><span>Customer</span><span>${escapeHTML(latestOrder.customer)}</span></div>
+              ${latestOrder.farm_name ? `<div class="r-row"><span>Farm</span><span>${escapeHTML(latestOrder.farm_name)}</span></div>` : ''}
+              ${latestOrder.farm_tag ? `<div class="r-row"><span>Farm Tag</span><span>${escapeHTML(latestOrder.farm_tag)}</span></div>` : ''}
             </div>
+            <div class="r-line"></div>
+            <div class="r-items">
+              ${(latestOrder.items_data && latestOrder.items_data.length > 0)
+                ? latestOrder.items_data.map(it => `<div class="r-row"><span>${escapeHTML(it.name)} × ${it.qty}</span><span>${money(it.subtotal || (it.price * it.qty))}</span></div>`).join('')
+                : PRODUCTS.slice(0,3).map((p, i) => `<div class="r-row"><span>${escapeHTML(p.name)} × ${i+1}</span><span>${money(p.price * (i+1))}</span></div>`).join('')}
+            </div>
+            <div class="r-line"></div>
+            <div class="r-items">
+              <div class="r-row"><span>Subtotal</span><span>${money(rSubtotal)}</span></div>
+              ${rDiscount > 0 ? `<div class="r-row" style="color:var(--accent-text); font-weight:700;"><span>Discount (${escapeHTML(latestOrder.promo_code || 'Promo')})</span><span style="color:var(--danger)">-${money(rDiscount)}</span></div>` : ''}
+              <div class="r-row r-total"><span>Total</span><span>${money(latestOrder.total)}</span></div>
+            </div>
+            ${footerGraphicHtml}
+            <div style="text-align:center; font-family:'Sunshiney', cursive; font-size:22px; font-weight:700; color:var(--accent-text); margin-top:8px; line-height:1.2;">${escapeHTML(footerMsg)}</div>
+            ${footerSub ? `<div style="text-align:center; font-size:12px; color:var(--muted); margin-top:2px;">${escapeHTML(footerSub)}</div>` : ''}
+            <button class="btn btn-primary btn-block mt-3" id="btnTrackOrder" style="font-size:14px; font-weight:700;">Track your order</button>
+            <button class="btn btn-block mt-2" id="dlReceipt" style="font-size:13.5px; font-weight:700; background:var(--primary-50); border:1.5px solid var(--border); color:var(--accent-text); cursor:pointer;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span>บันทึกรูปภาพใบเสร็จ (Save Receipt Image)</span>
+            </button>
           </div>
         `));
 
-        view.querySelector('#btnTrackOrder').addEventListener('click', () => {
+        const receiptEl = view.querySelector('.receipt');
+        view.querySelector('#btnTrackOrder')?.addEventListener('click', () => {
           root.querySelectorAll('#storeTabs .tab').forEach(x => x.classList.remove('active'));
           root.querySelector('#storeTabs [data-s="tracking"]').classList.add('active');
           drawStore('tracking');
         });
-
-        // High Quality Receipt Image Saving using html2canvas
-        view.querySelector('#dlReceipt').addEventListener('click', async () => {
-          const receiptEl = view.querySelector('#receiptPrintArea');
-          if (!receiptEl) return;
-          toast('กำลังบันทึกรูปภาพใบเสร็จ...', 'info');
-
-          if (window.html2canvas) {
-            try {
-              const canvas = await html2canvas(receiptEl, {
-                scale: 2.5,
-                useCORS: true,
-                backgroundColor: '#FFFFFF',
-                logging: false
-              });
-              const link = document.createElement('a');
-              link.download = `BNC-Receipt-${latestOrder.id || 'Order'}.png`;
-              link.href = canvas.toDataURL('image/png');
-              link.click();
-              toast('บันทึกรูปภาพใบเสร็จเรียบร้อย 📄✨', 'success');
-              return;
-            } catch (err) {
-              console.warn('html2canvas error:', err);
-            }
-          }
-          window.print();
+        view.querySelector('#dlReceipt')?.addEventListener('click', async () => {
+          await downloadReceiptAsImage(receiptEl, latestOrder.id);
         });
-
-        view.querySelector('#btnPrintReceipt').addEventListener('click', () => {
-          window.print();
-        });
-
       } else if (key === 'tracking') {
-        const latestOrder = (state.lastOrderId && ORDERS.find(x => String(x.id) === String(state.lastOrderId))) || ORDERS[0] || { id: 'HP-1042', customer: 'Anna Wong', date: new Date().toISOString().split('T')[0], status: 'waiting' };
-        const trackingTitle = state.store.trackingReviewTitle || state.store.receiptStoreName || state.store.name || 'BNC HayMate';
-        const trackingSub = state.store.trackingReviewSub || '';
+        const latestOrder = (state.lastOrderId && ORDERS.find(x => String(x.id) === String(state.lastOrderId))) || ORDERS[0] || { id: 'HP-027691-891', customer: 'Anna Wong', date: new Date().toISOString().split('T')[0], status: 'waiting' };
+        const trackingTitle = state.store.trackingReviewTitle || state.store.receiptStoreName || state.store.name || 'Lilith Store';
+        const trackingSub = state.store.trackingReviewSub || 'Thank you for your support';
         const trackingBtn = state.store.trackingReviewBtnText || 'เขียนรีวิว & ให้คะแนนร้าน';
-        const contactLabel = state.store.trackingContactLabel || '💬 ทักแชทแจ้งออเดอร์ (Line OA)';
-        const contactUrl = state.store.trackingContactUrl || 'https://line.me/R/ti/p/@bnchaymate';
+        const copyBtnText = state.store.trackingCopyBtnText || 'คัดลอกรหัสออเดอร์';
+        const contactBtnText = state.store.trackingContactBtnText || 'ทักแชทแจ้งออเดอร์ (Line OA)';
+        const contactUrl = state.store.trackingContactUrl || state.store.homeContactLineUrl || state.store.lineUrl || (state.store.homeContacts && state.store.homeContacts[0]?.url) || '';
 
         view.appendChild(el(`
-          <div class="card" style="max-width:560px; margin:0 auto;">
-            <div class="card-title">Order Tracking</div>
-            <div class="card-sub">Order ${latestOrder.id} · Live Status</div>
-            
-            <!-- Tracking Timeline (Requirement 1: Step 3 "You're in queue") -->
-            <div class="timeline" style="margin-top:14px">
+          <div class="card" style="max-width:540px; margin:0 auto; padding:28px 24px; border-radius:24px; border:1.5px solid var(--border); box-shadow:var(--shadow-soft);">
+            <div style="font-size:20px; font-weight:800; color:var(--text); margin-bottom:2px;">Order Tracking</div>
+            <div style="font-size:13px; color:var(--muted);">Order ${escapeHTML(latestOrder.id)} · Live Status</div>
+
+            <!-- Vertical Timeline (Dynamic theme colors & SVG icons) -->
+            <div class="timeline" style="margin-top:20px;">
               <div class="step done">
-                <div class="bullet">✓</div>
+                <div class="bullet">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
                 <div>
                   <div class="label">Waiting Payment</div>
                   <div class="sub">กรุณาชำระเงินเพื่อยืนยันคำสั่งซื้อ</div>
                 </div>
               </div>
-              <div class="step ${latestOrder.status !== 'waiting' ? 'done' : 'active'}">
-                <div class="bullet">${latestOrder.status !== 'waiting' ? '✓' : '2'}</div>
+              <div class="step done">
+                <div class="bullet">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
                 <div>
                   <div class="label">Payment Verify</div>
                   <div class="sub">ร้านกำลังตรวจสอบคำสั่งซื้อ กรุณารอสักครู่</div>
                 </div>
               </div>
-              <div class="step ${latestOrder.status === 'preparing' || latestOrder.status === 'completed' ? (latestOrder.status === 'completed' ? 'done' : 'active') : ''}">
-                <div class="bullet">${latestOrder.status === 'completed' ? '✓' : '3'}</div>
+              <div class="step done active">
+                <div class="bullet">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
                 <div>
-                  <div class="label" style="font-weight:800; color:var(--text);">You're in queue</div>
-                  <div class="sub" style="color:var(--accent-text); font-weight:600;">กรุณาคัดลอกรหัสออเดอร์ส่งให้ทางร้าน</div>
+                  <div class="label" style="color:var(--accent-text);">You're in queue</div>
+                  <div class="sub" style="color:var(--accent-text); font-weight:700;">กรุณาคัดลอกรหัสออเดอร์ส่งให้ทางร้าน</div>
                 </div>
               </div>
-              <div class="step ${latestOrder.status === 'completed' ? 'done' : ''}">
-                <div class="bullet">${latestOrder.status === 'completed' ? '✓' : '4'}</div>
+              <div class="step">
+                <div class="bullet">4</div>
                 <div>
                   <div class="label">Complete</div>
                   <div class="sub">จัดส่งเรียบร้อย</div>
@@ -9284,55 +10875,81 @@
               </div>
             </div>
 
-            <!-- Action Buttons for Queue & Contact (Requirement 1) -->
-            <div style="background:var(--card); border:1.5px solid var(--border); border-radius:16px; padding:16px; margin-top:18px; box-shadow:var(--shadow-soft);">
-              <div style="font-size:12px; font-weight:700; color:var(--muted); margin-bottom:4px;">รหัสคำสั่งซื้อของคุณ (Order Code):</div>
-              <div style="font-size:19px; font-weight:900; color:var(--accent-text); letter-spacing:0.5px; margin-bottom:12px;">
-                ${escapeHTML(latestOrder.id)}
-              </div>
-              <div style="display:flex; flex-wrap:wrap; gap:10px;">
-                <button type="button" class="btn btn-primary" id="btnCopyOrderId" style="flex:1; min-width:180px; font-size:13px; font-weight:700; border-radius:12px; padding:9px 16px;">
-                  📋 คัดลอกรหัสออเดอร์
+            <!-- Order Code Box (Matching Image) -->
+            <div style="border:1.5px solid var(--border); border-radius:18px; padding:18px; margin-top:24px; background:var(--card); box-shadow:var(--shadow-soft);">
+              <div style="font-size:12.5px; font-weight:700; color:var(--muted);">รหัสคำสั่งซื้อของคุณ (Order Code):</div>
+              <div style="font-size:26px; font-weight:900; color:var(--accent-text); margin:8px 0 16px; letter-spacing:0.5px;">${escapeHTML(latestOrder.id)}</div>
+              <div class="flex gap-2" style="flex-wrap:wrap;">
+                <button type="button" class="btn btn-primary" id="btnCopyTrackingOrderCode" style="flex:1; min-width:140px; padding:10px 16px; font-weight:700; border-radius:12px; font-size:13px;">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  <span>${escapeHTML(copyBtnText)}</span>
                 </button>
-                <a href="${escapeHTML(contactUrl)}" target="_blank" rel="noopener noreferrer" class="btn" id="btnContactShopLink" style="flex:1; min-width:180px; font-size:13px; font-weight:700; border-radius:12px; padding:9px 16px; background:var(--primary-50); color:var(--accent-text); border:1.5px solid var(--border); text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
-                  ${escapeHTML(contactLabel)}
-                </a>
+                <button type="button" class="btn" id="btnTrackingChatLine" style="flex:1; min-width:160px; padding:10px 16px; font-weight:700; border-radius:12px; border:1.5px solid var(--border); color:var(--accent-text); background:var(--primary-50); font-size:13px; cursor:pointer;">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                  <span>${escapeHTML(contactBtnText)}</span>
+                </button>
               </div>
             </div>
 
-            <!-- Review Card for Customers (Calligraphy Store Name + Subtext) -->
-            <div style="background:var(--primary-50); border:1.5px solid var(--border); border-radius:18px; padding:22px 18px; margin-top:20px; text-align:center; box-shadow:var(--shadow-soft);">
-              <div style="font-family:'Sunshiney', cursive; font-size:36px; font-weight:700; color:var(--accent-text); line-height:1.2; letter-spacing:0.5px;">
+            <!-- Calligraphy Thank You Review Card (Matching Image) -->
+            <div style="background:var(--primary-50); border:1.5px solid var(--border); border-radius:20px; padding:24px 18px; margin-top:16px; text-align:center; box-shadow:var(--shadow-soft);">
+              <div style="font-family:'Sunshiney', cursive; font-size:42px; font-weight:700; color:var(--accent-text); line-height:1.2; letter-spacing:0.5px;">
                 ${escapeHTML(trackingTitle)}
               </div>
-              <div style="font-size:12.5px; color:var(--muted); margin-top:6px; font-weight:500;">
-                ${escapeHTML(trackingSub)}
+              <div style="font-size:13px; color:var(--muted); margin-top:6px; font-weight:500;">
+                ${escapeHTML(trackingSub || 'Thank you for your support')}
               </div>
-              <button class="btn btn-primary btn-sm mt-3" id="btnTrackingReview" style="padding:9px 24px; font-weight:700; font-size:13px; border-radius:12px; box-shadow:var(--shadow-soft);">
+              <button class="btn btn-primary mt-3" id="btnTrackingReview" style="padding:9px 24px; font-weight:700; font-size:13px; border-radius:12px; box-shadow:var(--shadow-soft);">
                 ${escapeHTML(trackingBtn)}
               </button>
             </div>
 
-            <button class="btn btn-block mt-4" id="btnBackToReceipt">← Back to Receipt</button>
+            <button class="btn btn-ghost btn-block mt-4" id="btnBackToReceipt" style="font-weight:700; font-size:12.5px; border-radius:12px; border:1px solid var(--border);">← Back to Receipt (กลับไปดูใบเสร็จ)</button>
           </div>
         `));
 
-        // Copy Order Code Button listener
-        view.querySelector('#btnCopyOrderId')?.addEventListener('click', () => {
-          const code = latestOrder.id || '';
+        view.querySelector('#btnCopyTrackingOrderCode')?.addEventListener('click', async () => {
+          const code = String(latestOrder.id || '').trim();
+          let copied = false;
           if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(code).then(() => {
-              toast(`คัดลอกรหัสออเดอร์ "${code}" เรียบร้อยแล้ว 📋`, 'success');
-            }).catch(() => {
-              toast(`คัดลอกรหัส: ${code}`, 'success');
-            });
+            try {
+              await navigator.clipboard.writeText(code);
+              copied = true;
+            } catch (e) {}
+          }
+          if (!copied) {
+            try {
+              const ta = document.createElement('textarea');
+              ta.value = code;
+              ta.style.position = 'fixed';
+              ta.style.top = '0';
+              ta.style.left = '0';
+              ta.style.opacity = '0';
+              document.body.appendChild(ta);
+              ta.focus();
+              ta.select();
+              copied = document.execCommand('copy');
+              document.body.removeChild(ta);
+            } catch (e) {}
+          }
+          toast(`คัดลอกรหัสออเดอร์ "${code}" แล้ว`, 'success');
+        });
+
+        view.querySelector('#btnTrackingChatLine')?.addEventListener('click', () => {
+          const rawUrl = state.store.trackingContactUrl || state.store.homeContactLineUrl || state.store.lineUrl || (state.store.homeContacts && state.store.homeContacts[0]?.url) || '';
+          if (rawUrl && rawUrl.trim()) {
+            let target = rawUrl.trim();
+            if (!target.startsWith('http://') && !target.startsWith('https://')) {
+              target = 'https://' + target;
+            }
+            window.open(target, '_blank', 'noopener,noreferrer');
           } else {
-            toast(`คัดลอกรหัส: ${code}`, 'success');
+            toast('ยังไม่ได้ระบุลิงก์ติดต่อ กรุณาตั้งค่าในหน้า Settings', 'info');
           }
         });
 
         view.querySelector('#btnTrackingReview')?.addEventListener('click', () => openWriteReviewModal(latestOrder));
-        view.querySelector('#btnBackToReceipt').addEventListener('click', () => {
+        view.querySelector('#btnBackToReceipt')?.addEventListener('click', () => {
           root.querySelectorAll('#storeTabs .tab').forEach(x => x.classList.remove('active'));
           root.querySelector('#storeTabs [data-s="receipt"]').classList.add('active');
           drawStore('receipt');
@@ -9587,20 +11204,20 @@
 
   const STICKY_NOTE_PALETTES = {
     // 6 โทนสีสว่างพาสเทล (Light Pastel Presets)
-    yellow: { name: 'Butter Yellow (เหลืองเนย)', category: 'light', bg: '#FFFDF2', border: '#EFE6C7', bottom: '#DFD2A8', pin: '#EFA6C1', text: '#3E3426' },
-    pink: { name: 'Blossom Pink (ชมพูซากุระ)', category: 'light', bg: '#FFF5F8', border: '#FADBE6', bottom: '#F2BACF', pin: '#E58B94', text: '#3E242C' },
-    green: { name: 'Matcha Green (เขียวมัทฉะ)', category: 'light', bg: '#F4FAF6', border: '#D6EFE0', bottom: '#BBE2CB', pin: '#7CC59A', text: '#1F3528' },
-    blue: { name: 'Sky Blue (ฟ้าพาสเทล)', category: 'light', bg: '#F2F7FD', border: '#D4E5FA', bottom: '#B5D4F6', pin: '#8BB6E8', text: '#1B2F4A' },
-    purple: { name: 'Lavender (ม่วงลาเวนเดอร์)', category: 'light', bg: '#FAF5FD', border: '#EDDCFB', bottom: '#DFC6F7', pin: '#C79EE5', text: '#351F47' },
-    peach: { name: 'Peach Apricot (ส้มพีช)', category: 'light', bg: '#FFF8F2', border: '#FCE6D6', bottom: '#F7CFB5', pin: '#F0B265', text: '#422C1A' },
+    yellow: { name: 'Butter Yellow (เหลืองเนย)', category: 'light', bg: '#FFFDF2', border: '#EFE6C7', bottom: '#DFD2A8', pin: '#EFA6C1' },
+    pink: { name: 'Blossom Pink (ชมพูซากุระ)', category: 'light', bg: '#FFF5F8', border: '#FADBE6', bottom: '#F2BACF', pin: '#E58B94' },
+    green: { name: 'Matcha Green (เขียวมัทฉะ)', category: 'light', bg: '#F4FAF6', border: '#D6EFE0', bottom: '#BBE2CB', pin: '#7CC59A' },
+    blue: { name: 'Sky Blue (ฟ้าพาสเทล)', category: 'light', bg: '#F2F7FD', border: '#D4E5FA', bottom: '#B5D4F6', pin: '#8BB6E8' },
+    purple: { name: 'Lavender (ม่วงลาเวนเดอร์)', category: 'light', bg: '#FAF5FD', border: '#EDDCFB', bottom: '#DFC6F7', pin: '#C79EE5' },
+    peach: { name: 'Peach Apricot (ส้มพีช)', category: 'light', bg: '#FFF8F2', border: '#FCE6D6', bottom: '#F7CFB5', pin: '#F0B265' },
 
     // 6 โทนสีมืดพรีเมียม (Dark Night Presets)
-    dark_charcoal: { name: 'Dark Charcoal (ชาร์โคลมืด)', category: 'dark', bg: '#1E1B22', border: '#3A3342', bottom: '#4E4559', pin: '#EFA6C1', text: '#F6EEFB' },
-    dark_espresso: { name: 'Dark Espresso (เอสเปรสโซเข้ม)', category: 'dark', bg: '#221812', border: '#453024', bottom: '#5A3E2F', pin: '#F0B265', text: '#FDF7EE' },
-    dark_emerald: { name: 'Dark Forest (เขียวป่ามืด)', category: 'dark', bg: '#112218', border: '#254431', bottom: '#325C43', pin: '#7CC59A', text: '#EEFAF2' },
-    dark_navy: { name: 'Midnight Navy (มิดไนท์เนวี)', category: 'dark', bg: '#121D2C', border: '#243954', bottom: '#314D70', pin: '#8BB6E8', text: '#EDF5FD' },
-    dark_plum: { name: 'Plum Berry (เบอร์รี่พลัม)', category: 'dark', bg: '#241420', border: '#47273F', bottom: '#5C3352', pin: '#F8BFD4', text: '#FDEFF6' },
-    dark_violet: { name: 'Royal Violet (ไวโอเล็ตเข้ม)', category: 'dark', bg: '#1E122A', border: '#3C2454', bottom: '#503070', pin: '#D6BEE9', text: '#F8EEFD' }
+    dark_charcoal: { name: 'Dark Charcoal (ชาร์โคลมืด)', category: 'dark', bg: '#1E1B22', border: '#3A3342', bottom: '#4E4559', pin: '#EFA6C1' },
+    dark_espresso: { name: 'Dark Espresso (เอสเปรสโซเข้ม)', category: 'dark', bg: '#221812', border: '#453024', bottom: '#5A3E2F', pin: '#F0B265' },
+    dark_emerald: { name: 'Dark Forest (เขียวป่ามืด)', category: 'dark', bg: '#112218', border: '#254431', bottom: '#325C43', pin: '#7CC59A' },
+    dark_navy: { name: 'Midnight Navy (มิดไนท์เนวี)', category: 'dark', bg: '#121D2C', border: '#243954', bottom: '#314D70', pin: '#8BB6E8' },
+    dark_plum: { name: 'Plum Berry (เบอร์รี่พลัม)', category: 'dark', bg: '#241420', border: '#47273F', bottom: '#5C3352', pin: '#F8BFD4' },
+    dark_violet: { name: 'Royal Violet (ไวโอเล็ตเข้ม)', category: 'dark', bg: '#1E122A', border: '#3C2454', bottom: '#503070', pin: '#D6BEE9' }
   };
 
   function applyStickyNoteTheme() {
@@ -9608,7 +11225,6 @@
     let border = state.store.stickyNoteBorder || '#EFE6C7';
     let bottom = state.store.stickyNoteBottomBorder || '#DFD2A8';
     let pin = state.store.stickyNotePinColor || '#EFA6C1';
-    let text = state.store.stickyNoteTextColor || '#3E3426';
 
     if (state.store.stickyNotePreset && STICKY_NOTE_PALETTES[state.store.stickyNotePreset]) {
       const preset = STICKY_NOTE_PALETTES[state.store.stickyNotePreset];
@@ -9616,14 +11232,12 @@
       border = preset.border;
       bottom = preset.bottom;
       pin = preset.pin;
-      text = preset.text || '#3E3426';
     }
 
     document.documentElement.style.setProperty('--sticky-bg', bg);
     document.documentElement.style.setProperty('--sticky-border', border);
     document.documentElement.style.setProperty('--sticky-bottom-border', bottom);
     document.documentElement.style.setProperty('--sticky-pin-bg', pin);
-    document.documentElement.style.setProperty('--sticky-text', text);
   }
 
   function applyAppTheme(colorHex = state.color, themeMode = state.theme) {
